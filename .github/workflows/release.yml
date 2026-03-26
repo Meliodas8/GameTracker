@@ -47,38 +47,50 @@ jobs:
           # copia el JAR
           cp build/libs/GameTracker-1.0-SNAPSHOT.jar AppDir/usr/bin/
 
-          # genera un icono placeholder con ImageMagick (ya instalado en los runners de GitHub)
-          convert -size 256x256 xc:#4A90D9 \
-            -font DejaVu-Sans-Bold -pointsize 72 \
-            -fill white -gravity center -annotate 0 "GT" \
-            AppDir/usr/share/icons/hicolor/256x256/apps/gametracker.png
+          # genera un icono placeholder con Python + Pillow
+          pip3 install pillow -q
+          python3 << 'PYEOF'
+from PIL import Image, ImageDraw, ImageFont
+img = Image.new("RGB", (256, 256), color=(74, 144, 217))
+draw = ImageDraw.Draw(img)
+try:
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 72)
+except:
+    font = ImageFont.load_default()
+text = "GT"
+bbox = draw.textbbox((0, 0), text, font=font)
+x = (256 - (bbox[2] - bbox[0])) // 2 - bbox[0]
+y = (256 - (bbox[3] - bbox[1])) // 2 - bbox[1]
+draw.text((x, y), text, fill="white", font=font)
+img.save("AppDir/usr/share/icons/hicolor/256x256/apps/gametracker.png")
+PYEOF
           cp AppDir/usr/share/icons/hicolor/256x256/apps/gametracker.png AppDir/gametracker.png
 
           # crea el script de arranque
           cat > AppDir/usr/bin/gametracker << 'EOF'
-          #!/bin/bash
-          java -jar "$(dirname "$0")/GameTracker-1.0-SNAPSHOT.jar" "$@"
-          EOF
+#!/bin/bash
+java -jar "$(dirname "$0")/GameTracker-1.0-SNAPSHOT.jar" "$@"
+EOF
           chmod +x AppDir/usr/bin/gametracker
 
           # crea el .desktop
           cat > AppDir/usr/share/applications/gametracker.desktop << 'EOF'
-          [Desktop Entry]
-          Name=GameTracker
-          Exec=gametracker
-          Icon=gametracker
-          Type=Application
-          Categories=Game;
-          EOF
+[Desktop Entry]
+Name=GameTracker
+Exec=gametracker
+Icon=gametracker
+Type=Application
+Categories=Game;
+EOF
           cp AppDir/usr/share/applications/gametracker.desktop AppDir/gametracker.desktop
 
           # crea el AppRun
           cat > AppDir/AppRun << 'EOF'
-          #!/bin/bash
-          HERE="$(dirname "$(readlink -f "$0")")"
-          export PATH="$HERE/usr/bin:$PATH"
-          exec java -jar "$HERE/usr/bin/GameTracker-1.0-SNAPSHOT.jar" "$@"
-          EOF
+#!/bin/bash
+HERE="$(dirname "$(readlink -f "$0")")"
+export PATH="$HERE/usr/bin:$PATH"
+exec java -jar "$HERE/usr/bin/GameTracker-1.0-SNAPSHOT.jar" "$@"
+EOF
           chmod +x AppDir/AppRun
 
           # genera el AppImage
