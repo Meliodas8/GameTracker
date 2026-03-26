@@ -35,65 +35,28 @@ jobs:
       - name: Package AppImage (Linux)
         if: runner.os == 'Linux'
         run: |
-          # descarga appimagetool
           wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
           chmod +x appimagetool-x86_64.AppImage
 
-          # crea la estructura AppDir
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
 
-          # copia el JAR
           cp build/libs/GameTracker-1.0-SNAPSHOT.jar AppDir/usr/bin/
 
-          # genera un icono placeholder con Python + Pillow
           pip3 install pillow -q
-          python3 << 'PYEOF'
-from PIL import Image, ImageDraw, ImageFont
-img = Image.new("RGB", (256, 256), color=(74, 144, 217))
-draw = ImageDraw.Draw(img)
-try:
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 72)
-except:
-    font = ImageFont.load_default()
-text = "GT"
-bbox = draw.textbbox((0, 0), text, font=font)
-x = (256 - (bbox[2] - bbox[0])) // 2 - bbox[0]
-y = (256 - (bbox[3] - bbox[1])) // 2 - bbox[1]
-draw.text((x, y), text, fill="white", font=font)
-img.save("AppDir/usr/share/icons/hicolor/256x256/apps/gametracker.png")
-PYEOF
+          python3 .github/scripts/generate_icon.py
           cp AppDir/usr/share/icons/hicolor/256x256/apps/gametracker.png AppDir/gametracker.png
 
-          # crea el script de arranque
-          cat > AppDir/usr/bin/gametracker << 'EOF'
-#!/bin/bash
-java -jar "$(dirname "$0")/GameTracker-1.0-SNAPSHOT.jar" "$@"
-EOF
+          printf '#!/bin/bash\njava -jar "$(dirname "$0")/GameTracker-1.0-SNAPSHOT.jar" "$@"\n' > AppDir/usr/bin/gametracker
           chmod +x AppDir/usr/bin/gametracker
 
-          # crea el .desktop
-          cat > AppDir/usr/share/applications/gametracker.desktop << 'EOF'
-[Desktop Entry]
-Name=GameTracker
-Exec=gametracker
-Icon=gametracker
-Type=Application
-Categories=Game;
-EOF
+          printf '[Desktop Entry]\nName=GameTracker\nExec=gametracker\nIcon=gametracker\nType=Application\nCategories=Game;\n' > AppDir/usr/share/applications/gametracker.desktop
           cp AppDir/usr/share/applications/gametracker.desktop AppDir/gametracker.desktop
 
-          # crea el AppRun
-          cat > AppDir/AppRun << 'EOF'
-#!/bin/bash
-HERE="$(dirname "$(readlink -f "$0")")"
-export PATH="$HERE/usr/bin:$PATH"
-exec java -jar "$HERE/usr/bin/GameTracker-1.0-SNAPSHOT.jar" "$@"
-EOF
+          printf '#!/bin/bash\nHERE="$(dirname "$(readlink -f "$0")")"\nexport PATH="$HERE/usr/bin:$PATH"\nexec java -jar "$HERE/usr/bin/GameTracker-1.0-SNAPSHOT.jar" "$@"\n' > AppDir/AppRun
           chmod +x AppDir/AppRun
 
-          # genera el AppImage
           ARCH=x86_64 ./appimagetool-x86_64.AppImage AppDir GameTracker-x86_64.AppImage
 
       - name: Package (Windows)
