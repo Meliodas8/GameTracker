@@ -64,7 +64,12 @@ public class ProcessWatcher {
                 .filter(cmd -> !cmd.isBlank())
                 .map(cmd -> {
                     int lastSlash = Math.max(cmd.lastIndexOf('/'), cmd.lastIndexOf('\\'));
-                    return cmd.substring(lastSlash + 1);
+                    String name = cmd.substring(lastSlash + 1);
+                    // quita la extensión .exe en Windows
+                    if (name.toLowerCase().endsWith(".exe")) {
+                        name = name.substring(0, name.length() - 4);
+                    }
+                    return name;
                 })
                 .collect(Collectors.toSet());
     }

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="dev.manel.gametracker.ui.SettingsController">
+    <top>
+        <HBox styleClass="topbar" alignment="CENTER_LEFT">
+            <Label text="Ajustes" styleClass="topbar-title"/>
+        </HBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
+            <VBox spacing="24" style="-fx-padding: 16;">
+
+                <!-- Arranque con el sistema -->
+                <VBox styleClass="settings-section" spacing="8">
+                    <Label text="Sistema" styleClass="settings-section-title"/>
+                    <HBox styleClass="settings-row" alignment="CENTER_LEFT" spacing="12">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label text="Arrancar con el sistema"
+                                   styleClass="settings-label"/>
+                            <Label text="Inicia el daemon al arrancar la sesión"
+                                   styleClass="settings-description"/>
+                        </VBox>
+                        <CheckBox fx:id="chkAutostart" onAction="#onAutostartChanged"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Tema visual -->
+                <VBox styleClass="settings-section" spacing="8">
+                    <Label text="Apariencia" styleClass="settings-section-title"/>
+                    <HBox styleClass="settings-row" alignment="CENTER_LEFT" spacing="12">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label text="Tema" styleClass="settings-label"/>
+                            <Label text="Claro u oscuro"
+                                   styleClass="settings-description"/>
+                        </VBox>
+                        <ComboBox fx:id="themeSelector" onAction="#onThemeChanged"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Apps manuales -->
+                <VBox styleClass="settings-section" spacing="8">
+                    <Label text="Aplicaciones manuales"
+                           styleClass="settings-section-title"/>
+                    <HBox alignment="CENTER_LEFT" spacing="8">
+                        <TextField fx:id="appNameField"
+                                   promptText="Nombre (ej: IntelliJ IDEA)"
+                                   HBox.hgrow="ALWAYS"/>
+                        <TextField fx:id="appExecField"
+                                   promptText="Ejecutable (ej: idea)"
+                                   prefWidth="150"/>
+                        <Button text="Añadir" onAction="#addApp"/>
+                    </HBox>
+                    <ListView fx:id="manualAppsList" prefHeight="200"/>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+</BorderPane>

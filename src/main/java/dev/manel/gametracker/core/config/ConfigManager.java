@@ -32,6 +32,15 @@ public class ConfigManager {
         return List.copyOf(config.manualApps);
     }
 
+    public String getTheme() {
+        return config.theme != null ? config.theme : "light";
+    }
+
+    public void setTheme(String theme) {
+        config.theme = theme;
+        saveConfig();
+    }
+
     public void addManualApp(DetectedGame game) {
         config.manualApps.add(game);
         saveConfig();
@@ -65,5 +74,6 @@ public class ConfigManager {
     // clase interna que representa la estructura del JSON
     private static class Config {
         List<DetectedGame> manualApps = new ArrayList<>();
+        String theme = "light";
     }
 }

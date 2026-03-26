@@ -41,7 +41,7 @@ public class SteamProvider implements GameSourceProvider{
 
     public List<Path> getLibraryPaths() {
         Path vdfPath = location.getSteamRoot().resolve("steamapps/libraryfolders.vdf");
-        List<Path> paths = new ArrayList<>();
+        Set<Path> paths = new LinkedHashSet<>();
         paths.add(location.getSteamRoot().resolve("steamapps"));
 
         try {
@@ -49,12 +49,25 @@ public class SteamProvider implements GameSourceProvider{
                 String trimmed = line.strip();
                 if (trimmed.startsWith("\"path\"")) {
                     String path = trimmed.replaceAll("\"path\"\\s+\"(.+)\"", "$1");
+                    path = path.replace("\\\\", "\\"); // normaliza \\ a \ en Windows
                     paths.add(Path.of(path, "steamapps"));
                 }
             }
         } catch (IOException e) {}
 
-        return paths;
+        return new ArrayList<>(paths);
+    }
+
+    private boolean isRealGame(Map<String, String> fields) {
+        String name = fields.getOrDefault("name", "").toLowerCase();
+        String[] filters = {
+                "proton", "steam linux runtime", "steamworks",
+                "redistributable", "runtime"
+        };
+        for (String filter : filters) {
+            if (name.contains(filter)) return false;
+        }
+        return true;
     }
 
     private Optional<DetectedGame> parseManifest(Path acfPath) {
@@ -74,6 +87,7 @@ public class SteamProvider implements GameSourceProvider{
             String installDir = fields.get("installdir");
 
             if (name == null || appId == null) return Optional.empty();
+            if (!isRealGame(fields)) return Optional.empty();
 
             return Optional.of(new DetectedGame(
                     name,

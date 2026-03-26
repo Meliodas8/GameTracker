@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="dev.manel.gametracker.ui.MainController"
+            prefWidth="900" prefHeight="580">
+
+    <left>
+        <VBox styleClass="sidebar" spacing="4">
+            <Label styleClass="sidebar-title" text="MENÚ"/>
+            <Button fx:id="btnJuegos" text="Juegos"
+                    styleClass="nav-item"
+                    onAction="#showGames"/>
+            <Button fx:id="btnHistorial" text="Historial"
+                    styleClass="nav-item"
+                    onAction="#showHistory"/>
+            <Button fx:id="btnAjustes" text="Ajustes"
+                    styleClass="nav-item"
+                    onAction="#showSettings"/>
+        </VBox>
+    </left>
+
+    <center>
+        <StackPane fx:id="contentArea"/>
+    </center>
+
+</BorderPane>

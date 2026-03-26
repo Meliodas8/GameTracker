@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="dev.manel.gametracker.ui.GameListController">
+    <top>
+        <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="8">
+            <Label text="Mis juegos" styleClass="topbar-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="+ Añadir app" onAction="#addManualApp"/>
+        </HBox>
+    </top>
+
+    <center>
+        <ListView fx:id="gameListView" styleClass="game-list"/>
+    </center>
+
+    <right>
+        <VBox fx:id="detailPanel" styleClass="detail-panel" spacing="12"/>
+    </right>
+
+</BorderPane>

@@ -89,4 +89,9 @@ public class SessionManager {
             System.err.println("Error guardando sesiones: " + e.getMessage());
         }
     }
+
+    public boolean isActiveByName(String gameName) {
+        return activeSessions.keySet().stream()
+                .anyMatch(key -> key.equalsIgnoreCase(gameName));
+    }
 }

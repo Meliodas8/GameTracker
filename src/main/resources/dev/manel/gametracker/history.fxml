@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="dev.manel.gametracker.ui.HistoryController">
+    <top>
+        <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="12">
+            <Label text="Historial" styleClass="topbar-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <ComboBox fx:id="gameFilter" promptText="Todos los juegos"/>
+            <ToggleButton fx:id="btnDay" text="Por día"
+                          onAction="#onPeriodChanged"/>
+            <ToggleButton fx:id="btnWeek" text="Por semana"
+                          onAction="#onPeriodChanged"/>
+        </HBox>
+    </top>
+
+    <center>
+        <VBox spacing="12" style="-fx-padding: 16;">
+            <TableView fx:id="historyTable" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="colDate" text="Fecha" prefWidth="120"/>
+                    <TableColumn fx:id="colGame" text="Juego" prefWidth="220"/>
+                    <TableColumn fx:id="colDuration" text="Tiempo" prefWidth="100"/>
+                    <TableColumn fx:id="colSessions" text="Sesiones" prefWidth="80"/>
+                </columns>
+            </TableView>
+        </VBox>
+    </center>
+</BorderPane>
