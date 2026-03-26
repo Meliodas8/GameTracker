@@ -77,8 +77,8 @@ public class SteamProvider implements GameSourceProvider{
         String normalizedInstall = installDir.replaceAll("\\s+", "").toLowerCase();
 
         try {
-            // Busca .exe (juegos Proton) y ejecutables Linux nativos en el directorio raíz
-            return Files.list(gameDir)
+            // Busca .exe (juegos Proton) y ejecutables Linux nativos, incluyendo subdirectorios
+            return Files.walk(gameDir, 6)
                     .filter(p -> {
                         String fname = p.getFileName().toString();
                         if (fname.toLowerCase().endsWith(".exe")) return true;

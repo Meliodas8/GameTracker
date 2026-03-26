@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class ProcessWatcher {
 
@@ -41,11 +42,15 @@ public class ProcessWatcher {
     private void scan() {
         try {
             Set<String> runningProcesses = getRunningProcessNames();
+            Set<String> runningSteamAppIds = getRunningSteamAppIds();
             List<DetectedGame> knownGames = registry.getAllGames();
 
             for (DetectedGame game : knownGames) {
                 boolean isRunning = runningProcesses.stream()
-                        .anyMatch(p -> p.equalsIgnoreCase(game.executableName()));
+                        .anyMatch(p -> p.equalsIgnoreCase(game.executableName()))
+                        || ("STEAM".equals(game.platform())
+                            && game.platformId() != null
+                            && runningSteamAppIds.contains(game.platformId()));
 
                 if (isRunning && !sessionManager.isActive(game)) {
                     sessionManager.startSession(game);
@@ -70,6 +75,25 @@ public class ProcessWatcher {
                         name = name.substring(0, name.length() - 4);
                     }
                     return name;
+                })
+                .collect(Collectors.toSet());
+    }
+
+    // Detecta juegos de Steam corriendo bajo Proton buscando procesos "reaper"
+    // que contienen el AppId en sus argumentos: reaper SteamLaunch AppId=XXXXX --
+    private Set<String> getRunningSteamAppIds() {
+        return ProcessHandle.allProcesses()
+                .filter(p -> p.info().command()
+                        .map(cmd -> cmd.endsWith("/reaper") || cmd.endsWith("\\reaper.exe"))
+                        .orElse(false))
+                .flatMap(p -> {
+                    String cmdLine = p.info().commandLine().orElse("");
+                    int idx = cmdLine.indexOf("AppId=");
+                    if (idx < 0) return Stream.empty();
+                    String rest = cmdLine.substring(idx + 6);
+                    int end = rest.indexOf(' ');
+                    String appId = end > 0 ? rest.substring(0, end) : rest;
+                    return appId.isBlank() ? Stream.empty() : Stream.of(appId.trim());
                 })
                 .collect(Collectors.toSet());
     }
