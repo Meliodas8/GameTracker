@@ -70,6 +70,40 @@ public class SteamProvider implements GameSourceProvider{
         return true;
     }
 
+    private String findExecutableName(Path acfPath, String installDir) {
+        Path gameDir = acfPath.getParent().resolve("common").resolve(installDir);
+        if (!Files.isDirectory(gameDir)) return installDir;
+
+        String normalizedInstall = installDir.replaceAll("\\s+", "").toLowerCase();
+
+        try {
+            // Busca .exe (juegos Proton) y ejecutables Linux nativos en el directorio raíz
+            return Files.list(gameDir)
+                    .filter(p -> {
+                        String fname = p.getFileName().toString();
+                        if (fname.toLowerCase().endsWith(".exe")) return true;
+                        return !fname.contains(".") && Files.isExecutable(p) && !Files.isDirectory(p);
+                    })
+                    .map(p -> {
+                        String fname = p.getFileName().toString();
+                        if (fname.toLowerCase().endsWith(".exe")) {
+                            fname = fname.substring(0, fname.length() - 4);
+                        }
+                        return fname;
+                    })
+                    .filter(name -> {
+                        String normalizedName = name.replaceAll("\\s+", "").toLowerCase();
+                        return normalizedName.equals(normalizedInstall)
+                                || normalizedInstall.startsWith(normalizedName)
+                                || normalizedName.startsWith(normalizedInstall);
+                    })
+                    .findFirst()
+                    .orElse(installDir);
+        } catch (IOException e) {
+            return installDir;
+        }
+    }
+
     private Optional<DetectedGame> parseManifest(Path acfPath) {
         try {
             Map<String, String> fields = new HashMap<>();
@@ -89,10 +123,12 @@ public class SteamProvider implements GameSourceProvider{
             if (name == null || appId == null) return Optional.empty();
             if (!isRealGame(fields)) return Optional.empty();
 
+            String executableName = installDir != null ? findExecutableName(acfPath, installDir) : appId;
+
             return Optional.of(new DetectedGame(
                     name,
                     "STEAM",
-                    installDir != null ? installDir.toLowerCase() : appId,
+                    executableName,
                     appId
             ));
         } catch (IOException e) {
