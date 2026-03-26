@@ -35,25 +35,32 @@ jobs:
       - name: Package AppImage (Linux)
         if: runner.os == 'Linux'
         run: |
-          # instala appimage-builder
-          sudo apt-get install -y python3-pip python3-setuptools patchelf desktop-file-utils libgdk-pixbuf2.0-dev fakeroot strace
-          pip3 install appimage-builder
-      
-          # crea el directorio de staging
+          # descarga appimagetool
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          chmod +x appimagetool-x86_64.AppImage
+
+          # crea la estructura AppDir
           mkdir -p AppDir/usr/bin
           mkdir -p AppDir/usr/share/applications
           mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
-      
+
           # copia el JAR
           cp build/libs/GameTracker-1.0-SNAPSHOT.jar AppDir/usr/bin/
-      
+
+          # genera un icono placeholder con ImageMagick (ya instalado en los runners de GitHub)
+          convert -size 256x256 xc:#4A90D9 \
+            -font DejaVu-Sans-Bold -pointsize 72 \
+            -fill white -gravity center -annotate 0 "GT" \
+            AppDir/usr/share/icons/hicolor/256x256/apps/gametracker.png
+          cp AppDir/usr/share/icons/hicolor/256x256/apps/gametracker.png AppDir/gametracker.png
+
           # crea el script de arranque
           cat > AppDir/usr/bin/gametracker << 'EOF'
           #!/bin/bash
           java -jar "$(dirname "$0")/GameTracker-1.0-SNAPSHOT.jar" "$@"
           EOF
           chmod +x AppDir/usr/bin/gametracker
-      
+
           # crea el .desktop
           cat > AppDir/usr/share/applications/gametracker.desktop << 'EOF'
           [Desktop Entry]
@@ -63,21 +70,24 @@ jobs:
           Type=Application
           Categories=Game;
           EOF
-      
+          cp AppDir/usr/share/applications/gametracker.desktop AppDir/gametracker.desktop
+
           # crea el AppRun
           cat > AppDir/AppRun << 'EOF'
           #!/bin/bash
-          exec "$APPDIR/usr/bin/gametracker" "$@"
+          HERE="$(dirname "$(readlink -f "$0")")"
+          export PATH="$HERE/usr/bin:$PATH"
+          exec java -jar "$HERE/usr/bin/GameTracker-1.0-SNAPSHOT.jar" "$@"
           EOF
           chmod +x AppDir/AppRun
-      
+
           # genera el AppImage
-          appimage-builder --recipe appimage-builder.yml --skip-test
-      
+          ARCH=x86_64 ./appimagetool-x86_64.AppImage AppDir GameTracker-x86_64.AppImage
+
       - name: Package (Windows)
         if: runner.os == 'Windows'
         run: ./gradlew jpackageWindows
-      
+
       - name: Package (Mac)
         if: runner.os == 'macOS'
         run: ./gradlew jpackageMac
