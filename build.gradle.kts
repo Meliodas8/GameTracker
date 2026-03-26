@@ -49,3 +49,59 @@ tasks.jar {
     })
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
+
+tasks.register<Exec>("jpackageLinux") {
+    dependsOn("jar")
+    commandLine(
+        "jpackage",
+        "--input", "build/libs",
+        "--main-jar", "GameTracker-1.0-SNAPSHOT.jar",
+        "--main-class", "dev.manel.gametracker.MainApp",
+        "--name", "GameTracker",
+        "--app-version", "1.0",
+        "--type", "deb",
+        "--dest", "build/dist",
+        "--module-path", configurations.runtimeClasspath.get()
+            .filter { it.name.contains("javafx") }
+            .joinToString(":") { it.absolutePath },
+        "--add-modules", "javafx.controls,javafx.fxml"
+    )
+}
+
+tasks.register<Exec>("jpackageWindows") {
+    dependsOn("jar")
+    commandLine(
+        "jpackage",
+        "--input", "build/libs",
+        "--main-jar", "GameTracker-1.0-SNAPSHOT.jar",
+        "--main-class", "dev.manel.gametracker.MainApp",
+        "--name", "GameTracker",
+        "--app-version", "1.0",
+        "--type", "exe",
+        "--dest", "build/dist",
+        "--module-path", configurations.runtimeClasspath.get()
+            .filter { it.name.contains("javafx") }
+            .joinToString(";") { it.absolutePath },
+        "--add-modules", "javafx.controls,javafx.fxml",
+        "--win-menu",
+        "--win-shortcut"
+    )
+}
+
+tasks.register<Exec>("jpackageMac") {
+    dependsOn("jar")
+    commandLine(
+        "jpackage",
+        "--input", "build/libs",
+        "--main-jar", "GameTracker-1.0-SNAPSHOT.jar",
+        "--main-class", "dev.manel.gametracker.MainApp",
+        "--name", "GameTracker",
+        "--app-version", "1.0",
+        "--type", "dmg",
+        "--dest", "build/dist",
+        "--module-path", configurations.runtimeClasspath.get()
+            .filter { it.name.contains("javafx") }
+            .joinToString(":") { it.absolutePath },
+        "--add-modules", "javafx.controls,javafx.fxml"
+    )
+}
