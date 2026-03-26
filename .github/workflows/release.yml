@@ -31,6 +31,48 @@ jobs:
       - name: Package (Linux)
         if: runner.os == 'Linux'
         run: ./gradlew jpackageLinux
+
+      - name: Package AppImage (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          # instala appimage-builder
+          sudo apt-get install -y python3-pip python3-setuptools patchelf desktop-file-utils libgdk-pixbuf2.0-dev fakeroot strace
+          pip3 install appimage-builder
+      
+          # crea el directorio de staging
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+      
+          # copia el JAR
+          cp build/libs/GameTracker-1.0-SNAPSHOT.jar AppDir/usr/bin/
+      
+          # crea el script de arranque
+          cat > AppDir/usr/bin/gametracker << 'EOF'
+          #!/bin/bash
+          java -jar "$(dirname "$0")/GameTracker-1.0-SNAPSHOT.jar" "$@"
+          EOF
+          chmod +x AppDir/usr/bin/gametracker
+      
+          # crea el .desktop
+          cat > AppDir/usr/share/applications/gametracker.desktop << 'EOF'
+          [Desktop Entry]
+          Name=GameTracker
+          Exec=gametracker
+          Icon=gametracker
+          Type=Application
+          Categories=Game;
+          EOF
+      
+          # crea el AppRun
+          cat > AppDir/AppRun << 'EOF'
+          #!/bin/bash
+          exec "$APPDIR/usr/bin/gametracker" "$@"
+          EOF
+          chmod +x AppDir/AppRun
+      
+          # genera el AppImage
+          appimage-builder --recipe appimage-builder.yml --skip-test
       
       - name: Package (Windows)
         if: runner.os == 'Windows'
