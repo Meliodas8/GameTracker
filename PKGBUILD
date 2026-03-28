@@ -7,13 +7,13 @@ arch=('x86_64')
 url="https://github.com/Meliodas8/GameTracker"
 license=('MIT')
 depends=('fuse2' 'java-runtime>=21')
-source=("GameTracker-x86_64.AppImage::https://github.com/Meliodas8/GameTracker/releases/download/v${pkgver}/GameTracker-x86_64.AppImage")
+source=("GameTracker-${pkgver}-x86_64.AppImage::https://github.com/Meliodas8/GameTracker/releases/download/v${pkgver}/GameTracker-x86_64.AppImage")
 sha256sums=('SKIP')
 options=('!strip')
 
 prepare() {
-    chmod +x "${srcdir}/GameTracker-x86_64.AppImage"
-    "${srcdir}/GameTracker-x86_64.AppImage" --appimage-extract
+    chmod +x "${srcdir}/GameTracker-${pkgver}-x86_64.AppImage"
+    "${srcdir}/GameTracker-${pkgver}-x86_64.AppImage" --appimage-extract
 }
 
 package() {
