@@ -14,8 +14,10 @@ import javafx.scene.layout.VBox;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -243,10 +245,11 @@ public class GameListController {
 
     private String formatLastPlayed(Instant instant) {
         if (instant == null) return "Sin sesiones";
-        Duration ago = Duration.between(instant, Instant.now());
-        if (ago.toDays() == 0) return "Última sesión: hoy";
-        if (ago.toDays() == 1) return "Última sesión: ayer";
-        return "Última sesión: hace " + ago.toDays() + " días";
+        LocalDate sessionDay = instant.atZone(ZoneId.systemDefault()).toLocalDate();
+        long days = ChronoUnit.DAYS.between(sessionDay, LocalDate.now());
+        if (days == 0) return "Última sesión: hoy";
+        if (days == 1) return "Última sesión: ayer";
+        return "Última sesión: hace " + days + " días";
     }
 
     private String formatDate(Instant instant) {

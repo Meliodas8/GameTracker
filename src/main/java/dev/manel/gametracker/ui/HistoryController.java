@@ -95,6 +95,8 @@ public class HistoryController {
     private List<HistoryEntry> groupByDay(List<GameSession> sessions) {
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
+        record DayEntry(LocalDate date, String gameName, Duration total, int count) {}
+
         return sessions.stream()
                 .collect(Collectors.groupingBy(s -> {
                     LocalDate date = s.startTime()
@@ -108,10 +110,10 @@ public class HistoryController {
                     Duration total = e.getValue().stream()
                             .map(GameSession::duration)
                             .reduce(Duration.ZERO, Duration::plus);
-                    return new HistoryEntry(
-                            date.format(fmt), parts[1], total, e.getValue().size());
+                    return new DayEntry(date, parts[1], total, e.getValue().size());
                 })
-                .sorted(Comparator.comparing(HistoryEntry::date).reversed())
+                .sorted(Comparator.comparing(DayEntry::date).reversed())
+                .map(d -> new HistoryEntry(d.date().format(fmt), d.gameName(), d.total(), d.count()))
                 .toList();
     }
 

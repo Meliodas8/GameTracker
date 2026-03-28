@@ -2,6 +2,7 @@ module dev.manel.gametracker {
     requires javafx.controls;
     requires javafx.fxml;
     requires com.google.gson;
+    requires java.net.http;
 
     opens dev.manel.gametracker to javafx.graphics, javafx.fxml;
     opens dev.manel.gametracker.ui to javafx.fxml;

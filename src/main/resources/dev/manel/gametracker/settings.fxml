@@ -41,6 +41,19 @@
                     </HBox>
                 </VBox>
 
+                <!-- Actualizaciones -->
+                <VBox styleClass="settings-section" spacing="8">
+                    <Label text="Actualizaciones" styleClass="settings-section-title"/>
+                    <HBox styleClass="settings-row" alignment="CENTER_LEFT" spacing="12">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label fx:id="versionLabel" styleClass="settings-label"/>
+                            <Label fx:id="updateStatusLabel" styleClass="settings-description"/>
+                        </VBox>
+                        <Button fx:id="checkUpdateBtn" text="Buscar actualizaciones"
+                                onAction="#onCheckUpdate"/>
+                    </HBox>
+                </VBox>
+
                 <!-- Apps manuales -->
                 <VBox styleClass="settings-section" spacing="8">
                     <Label text="Aplicaciones manuales"

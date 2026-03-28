@@ -25,6 +25,12 @@ jobs:
         if: runner.os != 'Windows'
         run: chmod +x gradlew
 
+      - name: Set version
+        shell: bash
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          echo "version=${VERSION}" > src/main/resources/dev/manel/gametracker/version.properties
+
       - name: Build JAR
         run: ./gradlew jar
 
