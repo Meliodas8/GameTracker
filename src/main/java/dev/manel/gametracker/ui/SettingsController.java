@@ -22,6 +22,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -160,10 +161,14 @@ public class SettingsController {
         Thread.ofVirtual().start(() -> {
             String status;
             try {
-                HttpClient client = HttpClient.newHttpClient();
+                HttpClient client = HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(10))
+                        .build();
                 HttpRequest request = HttpRequest.newBuilder()
                         .uri(URI.create(RELEASES_API))
                         .header("Accept", "application/vnd.github+json")
+                        .header("User-Agent", "GameTracker/" + currentVersion)
+                        .timeout(Duration.ofSeconds(15))
                         .GET()
                         .build();
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -287,9 +292,14 @@ public class SettingsController {
 
         Platform.runLater(() -> updateStatusLabel.setText("Descargando actualización..."));
 
-        HttpClient client = HttpClient.newHttpClient();
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .followRedirects(HttpClient.Redirect.ALWAYS)
+                .build();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(downloadUrl))
+                .header("User-Agent", "GameTracker/" + currentVersion)
+                .timeout(Duration.ofMinutes(5))
                 .GET()
                 .build();
         client.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
