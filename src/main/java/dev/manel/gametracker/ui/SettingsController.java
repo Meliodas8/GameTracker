@@ -16,13 +16,15 @@ import javafx.scene.layout.Region;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.stream.Collectors;
 
 public class SettingsController {
 
@@ -146,32 +148,35 @@ public class SettingsController {
         checkUpdateBtn.setDisable(true);
         updateStatusLabel.setText("Buscando actualizaciones...");
 
-        Thread.ofVirtual().start(() -> {
-            String status;
-            try {
-                HttpURLConnection conn = (HttpURLConnection) URI.create(RELEASES_API).toURL().openConnection();
-                conn.setConnectTimeout(10_000);
-                conn.setReadTimeout(15_000);
-                conn.setRequestProperty("Accept", "application/vnd.github+json");
-                conn.setRequestProperty("User-Agent", "GameTracker/" + currentVersion);
-                String json = new String(conn.getInputStream().readAllBytes());
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(RELEASES_API))
+                .header("Accept", "application/vnd.github+json")
+                .header("User-Agent", "GameTracker/" + currentVersion)
+                .timeout(Duration.ofSeconds(15))
+                .GET()
+                .build();
 
-                List<String> newer = parseNewerVersions(json);
-                if (newer.isEmpty()) {
-                    status = "Ya tienes la última versión (" + currentVersion + ")";
-                } else {
-                    status = "Actualizaciones disponibles: " + newer.stream().collect(Collectors.joining(", "));
-                }
-            } catch (Exception e) {
-                status = "Error al comprobar actualizaciones: " + e.getMessage();
-            }
-
-            String finalStatus = status;
-            Platform.runLater(() -> {
-                updateStatusLabel.setText(finalStatus);
-                checkUpdateBtn.setDisable(false);
-            });
-        });
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                .thenAccept(response -> {
+                    List<String> newer = parseNewerVersions(response.body());
+                    String status = newer.isEmpty()
+                            ? "Ya tienes la última versión (" + currentVersion + ")"
+                            : "Actualizaciones disponibles: " + String.join(", ", newer);
+                    Platform.runLater(() -> {
+                        updateStatusLabel.setText(status);
+                        checkUpdateBtn.setDisable(false);
+                    });
+                })
+                .exceptionally(e -> {
+                    Platform.runLater(() -> {
+                        updateStatusLabel.setText("Error al comprobar actualizaciones: " + e.getMessage());
+                        checkUpdateBtn.setDisable(false);
+                    });
+                    return null;
+                });
     }
 
     private List<String> parseNewerVersions(String json) {
