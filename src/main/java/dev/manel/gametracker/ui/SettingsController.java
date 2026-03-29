@@ -1,5 +1,8 @@
 package dev.manel.gametracker.ui;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import dev.manel.gametracker.autostart.AutostartStrategy;
 import dev.manel.gametracker.core.config.ConfigManager;
 import dev.manel.gametracker.core.model.DetectedGame;
@@ -36,9 +39,12 @@ public class SettingsController {
     @FXML private Button checkUpdateBtn;
 
     private static final String RELEASES_API = "https://api.github.com/repos/Meliodas8/GameTracker/releases/latest";
+    private static final String RELEASES_PAGE = "https://github.com/Meliodas8/GameTracker/releases/latest";
 
     private final AutostartStrategy autostart = AutostartStrategy.detect();
     private final String currentVersion = loadCurrentVersion();
+    private boolean updateAvailable = false;
+    private String cachedReleaseJson;
 
     @FXML
     public void initialize() {
@@ -143,6 +149,11 @@ public class SettingsController {
 
     @FXML
     public void onCheckUpdate() {
+        if (updateAvailable) {
+            performUpdate();
+            return;
+        }
+
         checkUpdateBtn.setDisable(true);
         updateStatusLabel.setText("Buscando actualizaciones...");
 
@@ -156,13 +167,15 @@ public class SettingsController {
                         .GET()
                         .build();
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                String latestVersion = parseTagName(response.body());
+                cachedReleaseJson = response.body();
+                String latestVersion = parseTagName(cachedReleaseJson);
                 if (latestVersion == null) {
                     status = "No se pudo obtener la última versión";
                 } else if (latestVersion.equals(currentVersion)) {
                     status = "Ya tienes la última versión (" + currentVersion + ")";
                 } else {
-                    status = "Nueva versión disponible: " + latestVersion + " → actualiza con: yay -Su gametracker";
+                    updateAvailable = true;
+                    status = "Nueva versión disponible: " + latestVersion;
                 }
             } catch (Exception e) {
                 status = "Error al comprobar actualizaciones: " + e.getMessage();
@@ -171,9 +184,142 @@ public class SettingsController {
             String finalStatus = status;
             Platform.runLater(() -> {
                 updateStatusLabel.setText(finalStatus);
+                if (updateAvailable) {
+                    checkUpdateBtn.setText("Actualizar ahora");
+                }
                 checkUpdateBtn.setDisable(false);
             });
         });
+    }
+
+    private void performUpdate() {
+        checkUpdateBtn.setDisable(true);
+        updateStatusLabel.setText("Preparando actualización...");
+
+        Thread.ofVirtual().start(() -> {
+            try {
+                String os = System.getProperty("os.name", "").toLowerCase();
+                if (os.contains("linux") && isArchLinux()) {
+                    launchTerminalYayUpdate();
+                } else {
+                    String downloadUrl = findAssetUrl(cachedReleaseJson, os);
+                    if (downloadUrl != null) {
+                        downloadAndInstall(downloadUrl, os);
+                    } else {
+                        openBrowser(RELEASES_PAGE);
+                        Platform.runLater(() -> {
+                            updateStatusLabel.setText("Descarga abierta en el navegador");
+                            checkUpdateBtn.setDisable(false);
+                        });
+                    }
+                }
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    updateStatusLabel.setText("Error al actualizar: " + e.getMessage());
+                    checkUpdateBtn.setDisable(false);
+                });
+            }
+        });
+    }
+
+    private boolean isArchLinux() {
+        return Files.exists(Path.of("/etc/arch-release"));
+    }
+
+    private void launchTerminalYayUpdate() {
+        List<String[]> terminals = List.of(
+            new String[]{"konsole", "-e", "bash", "-c", "yay -Su gametracker; read"},
+            new String[]{"gnome-terminal", "--", "bash", "-c", "yay -Su gametracker; read"},
+            new String[]{"xfce4-terminal", "-e", "bash -c 'yay -Su gametracker; read'"},
+            new String[]{"kitty", "bash", "-c", "yay -Su gametracker; read"},
+            new String[]{"alacritty", "-e", "bash", "-c", "yay -Su gametracker; read"},
+            new String[]{"xterm", "-e", "bash", "-c", "yay -Su gametracker; read"}
+        );
+
+        for (String[] cmd : terminals) {
+            try {
+                if (commandExists(cmd[0])) {
+                    new ProcessBuilder(cmd).start();
+                    Platform.runLater(() -> {
+                        updateStatusLabel.setText("Actualizando en el terminal...");
+                        checkUpdateBtn.setDisable(false);
+                    });
+                    return;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // No se encontró terminal, abrir navegador como fallback
+        openBrowser(RELEASES_PAGE);
+        Platform.runLater(() -> {
+            updateStatusLabel.setText("Ejecuta manualmente: yay -Su gametracker");
+            checkUpdateBtn.setDisable(false);
+        });
+    }
+
+    private boolean commandExists(String command) {
+        try {
+            return new ProcessBuilder("which", command).start().waitFor() == 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private String findAssetUrl(String json, String os) {
+        try {
+            JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+            JsonArray assets = root.getAsJsonArray("assets");
+            String extension = os.contains("win") ? ".exe" : os.contains("mac") ? ".dmg" : ".AppImage";
+            for (int i = 0; i < assets.size(); i++) {
+                JsonObject asset = assets.get(i).getAsJsonObject();
+                String name = asset.get("name").getAsString();
+                if (name.endsWith(extension)) {
+                    return asset.get("browser_download_url").getAsString();
+                }
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private void downloadAndInstall(String downloadUrl, String os) throws Exception {
+        String ext = os.contains("win") ? ".exe" : os.contains("mac") ? ".dmg" : ".AppImage";
+        Path tempFile = Files.createTempFile("gametracker-update", ext);
+
+        Platform.runLater(() -> updateStatusLabel.setText("Descargando actualización..."));
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(downloadUrl))
+                .GET()
+                .build();
+        client.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
+        tempFile.toFile().setExecutable(true);
+
+        if (os.contains("win")) {
+            new ProcessBuilder(tempFile.toString()).start();
+        } else if (os.contains("mac")) {
+            new ProcessBuilder("open", tempFile.toString()).start();
+        } else {
+            new ProcessBuilder(tempFile.toString()).start();
+        }
+
+        Platform.runLater(() -> {
+            updateStatusLabel.setText("Instalador iniciado. Reinicia la aplicación.");
+            checkUpdateBtn.setDisable(false);
+        });
+    }
+
+    private void openBrowser(String url) {
+        try {
+            String os = System.getProperty("os.name", "").toLowerCase();
+            if (os.contains("win")) {
+                new ProcessBuilder("cmd", "/c", "start", url).start();
+            } else if (os.contains("mac")) {
+                new ProcessBuilder("open", url).start();
+            } else {
+                new ProcessBuilder("xdg-open", url).start();
+            }
+        } catch (Exception ignored) {}
     }
 
     private String parseTagName(String json) {
@@ -190,11 +336,6 @@ public class SettingsController {
         } catch (IOException e) {
             return "desconocida";
         }
-    }
-
-    private Path getServicePath() {
-        return Path.of(System.getProperty("user.home"),
-                ".config", "systemd", "user", "gametracker.service");
     }
 
     private void showAlert(String message) {
