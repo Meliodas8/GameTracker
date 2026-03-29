@@ -16,10 +16,13 @@ import javafx.scene.layout.Region;
 
 import java.io.IOException;
 import java.io.InputStream;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.security.KeyStore;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -148,9 +151,7 @@ public class SettingsController {
         checkUpdateBtn.setDisable(true);
         updateStatusLabel.setText("Buscando actualizaciones...");
 
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
+        HttpClient client = buildHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(RELEASES_API))
                 .header("Accept", "application/vnd.github+json")
@@ -177,6 +178,23 @@ public class SettingsController {
                     });
                     return null;
                 });
+    }
+
+    private HttpClient buildHttpClient() {
+        HttpClient.Builder builder = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10));
+        if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
+            try {
+                KeyStore ks = KeyStore.getInstance("Windows-ROOT");
+                ks.load(null, null);
+                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(ks);
+                SSLContext ctx = SSLContext.getInstance("TLS");
+                ctx.init(null, tmf.getTrustManagers(), null);
+                builder.sslContext(ctx);
+            } catch (Exception ignored) {}
+        }
+        return builder.build();
     }
 
     private List<String> parseNewerVersions(String json) {

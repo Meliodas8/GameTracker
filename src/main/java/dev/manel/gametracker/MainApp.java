@@ -9,9 +9,6 @@ import javafx.application.Application;
 
 public class MainApp {
     public static void main(String[] args) {
-        if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
-            System.setProperty("javax.net.ssl.trustStoreType", "Windows-ROOT");
-        }
         if (isDaemonMode(args)) {
             startDaemon();
         } else {
