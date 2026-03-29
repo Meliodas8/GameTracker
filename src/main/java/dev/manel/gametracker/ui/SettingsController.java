@@ -16,13 +16,10 @@ import javafx.scene.layout.Region;
 
 import java.io.IOException;
 import java.io.InputStream;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.security.KeyStore;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -181,20 +178,9 @@ public class SettingsController {
     }
 
     private HttpClient buildHttpClient() {
-        HttpClient.Builder builder = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10));
-        if (System.getProperty("os.name", "").toLowerCase().contains("win")) {
-            try {
-                KeyStore ks = KeyStore.getInstance("Windows-ROOT");
-                ks.load(null, null);
-                TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-                tmf.init(ks);
-                SSLContext ctx = SSLContext.getInstance("TLS");
-                ctx.init(null, tmf.getTrustManagers(), null);
-                builder.sslContext(ctx);
-            } catch (Exception ignored) {}
-        }
-        return builder.build();
+        return HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
     }
 
     private List<String> parseNewerVersions(String json) {

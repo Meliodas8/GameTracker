@@ -64,7 +64,7 @@ tasks.register<Exec>("jpackageLinux") {
         "--module-path", configurations.runtimeClasspath.get()
             .filter { it.name.contains("javafx") }
             .joinToString(":") { it.absolutePath },
-        "--add-modules", "javafx.controls,javafx.fxml"
+        "--add-modules", "javafx.controls,javafx.fxml,java.net.http,jdk.crypto.ec"
     )
 }
 
@@ -82,7 +82,7 @@ tasks.register<Exec>("jpackageWindows") {
         "--module-path", configurations.runtimeClasspath.get()
             .filter { it.name.contains("javafx") }
             .joinToString(";") { it.absolutePath },
-        "--add-modules", "javafx.controls,javafx.fxml",
+        "--add-modules", "javafx.controls,javafx.fxml,java.net.http,jdk.crypto.ec,jdk.crypto.mscapi",
         "--win-menu",
         "--win-shortcut"
     )
@@ -102,6 +102,6 @@ tasks.register<Exec>("jpackageMac") {
         "--module-path", configurations.runtimeClasspath.get()
             .filter { it.name.contains("javafx") }
             .joinToString(":") { it.absolutePath },
-        "--add-modules", "javafx.controls,javafx.fxml"
+        "--add-modules", "javafx.controls,javafx.fxml,java.net.http,jdk.crypto.ec"
     )
 }
