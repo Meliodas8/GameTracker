@@ -42,13 +42,16 @@ public class ProcessWatcher {
 
     private void scan() {
         try {
-            Set<String> runningProcesses = getRunningProcessNames();
+            Set<ProcessUtils.ProcessInfo> runningProcesses = ProcessUtils.getRunningProcessInfos();
             Set<String> runningSteamAppIds = getRunningSteamAppIds();
             List<DetectedGame> knownGames = registry.getAllGames();
 
             for (DetectedGame game : knownGames) {
-                boolean isRunning = runningProcesses.stream()
-                        .anyMatch(p -> p.equalsIgnoreCase(game.executableName()))
+                String execName = game.executableName().toLowerCase();
+                boolean isRunning = runningProcesses.stream().anyMatch(info ->
+                                info.comm().equalsIgnoreCase(game.executableName())
+                                || (!info.exePath().isBlank()
+                                    && info.exePath().toLowerCase().contains(execName)))
                         || ("STEAM".equals(game.platform())
                             && game.platformId() != null
                             && runningSteamAppIds.contains(game.platformId()));
@@ -62,10 +65,6 @@ public class ProcessWatcher {
         } catch (Exception e) {
             System.err.println("Error en scan: " + e.getMessage());
         }
-    }
-
-    private Set<String> getRunningProcessNames() {
-        return ProcessUtils.getRunningProcessNames();
     }
 
     // Detecta juegos de Steam corriendo bajo Proton buscando procesos "reaper"

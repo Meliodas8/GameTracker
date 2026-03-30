@@ -202,32 +202,39 @@ public class GameListController {
         execField.setPromptText("Ejecutable (ej: brave)");
 
         // Lista de procesos en ejecución — misma lógica que ProcessWatcher
-        List<String> processes = getRunningProcessNames();
+        List<ProcessUtils.ProcessInfo> processes = ProcessUtils.getRunningProcessInfosSorted();
 
         TextField filterField = new TextField();
         filterField.setPromptText("Filtrar...");
 
-        ListView<String> processList = new ListView<>();
-        ObservableList<String> allProcesses = FXCollections.observableArrayList(processes);
+        ListView<ProcessUtils.ProcessInfo> processList = new ListView<>();
+        ObservableList<ProcessUtils.ProcessInfo> allProcesses = FXCollections.observableArrayList(processes);
         processList.setItems(allProcesses);
         processList.setPrefHeight(160);
+        processList.setCellFactory(lv -> new ListCell<>() {
+            @Override
+            protected void updateItem(ProcessUtils.ProcessInfo item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? null : item.displayLabel());
+            }
+        });
 
         filterField.textProperty().addListener((obs, old, val) ->
                 processList.setItems(val.isBlank()
                         ? allProcesses
-                        : allProcesses.filtered(p -> p.toLowerCase().contains(val.toLowerCase())))
+                        : allProcesses.filtered(p -> p.displayLabel().toLowerCase().contains(val.toLowerCase())))
         );
 
         // Al seleccionar un proceso se rellena automáticamente el campo ejecutable
         processList.getSelectionModel().selectedItemProperty().addListener(
-                (obs, old, selected) -> { if (selected != null) execField.setText(selected); }
+                (obs, old, selected) -> { if (selected != null) execField.setText(selected.suggestedExecName()); }
         );
 
         Label nameLabel = new Label("Nombre");
         nameLabel.getStyleClass().add("settings-label");
         Label execLabel = new Label("Ejecutable");
         execLabel.getStyleClass().add("settings-label");
-        Label processLabel = new Label("Procesos en ejecución (haz clic para usar)");
+        Label processLabel = new Label("Procesos en ejecución — clic para usar, o escribe parte de la ruta para apps Java/Python");
         processLabel.getStyleClass().add("settings-description");
 
         VBox content = new VBox(8,
@@ -258,9 +265,6 @@ public class GameListController {
         });
     }
 
-    private List<String> getRunningProcessNames() {
-        return ProcessUtils.getRunningProcessNamesSorted();
-    }
 
     private String formatDuration(Duration d) {
         long hours = d.toHours();
