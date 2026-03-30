@@ -1,5 +1,6 @@
 package dev.manel.gametracker.session;
 
+import dev.manel.gametracker.core.ProcessUtils;
 import dev.manel.gametracker.core.model.DetectedGame;
 import dev.manel.gametracker.providers.GameSourceRegistry;
 
@@ -64,19 +65,7 @@ public class ProcessWatcher {
     }
 
     private Set<String> getRunningProcessNames() {
-        return ProcessHandle.allProcesses()
-                .map(p -> p.info().command().orElse(""))
-                .filter(cmd -> !cmd.isBlank())
-                .map(cmd -> {
-                    int lastSlash = Math.max(cmd.lastIndexOf('/'), cmd.lastIndexOf('\\'));
-                    String name = cmd.substring(lastSlash + 1);
-                    // quita la extensión .exe en Windows
-                    if (name.toLowerCase().endsWith(".exe")) {
-                        name = name.substring(0, name.length() - 4);
-                    }
-                    return name;
-                })
-                .collect(Collectors.toSet());
+        return ProcessUtils.getRunningProcessNames();
     }
 
     // Detecta juegos de Steam corriendo bajo Proton buscando procesos "reaper"

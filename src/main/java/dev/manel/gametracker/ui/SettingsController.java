@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.manel.gametracker.autostart.AutostartStrategy;
+import dev.manel.gametracker.core.ProcessUtils;
 import dev.manel.gametracker.core.config.ConfigManager;
 import dev.manel.gametracker.core.model.DetectedGame;
 import javafx.application.Platform;
@@ -174,22 +175,8 @@ public class SettingsController {
         });
     }
 
-    // Misma lógica que ProcessWatcher.getRunningProcessNames() para que los nombres coincidan
     private List<String> getRunningProcessNames() {
-        return ProcessHandle.allProcesses()
-                .map(p -> p.info().command().orElse(""))
-                .filter(cmd -> !cmd.isBlank())
-                .map(cmd -> {
-                    int lastSlash = Math.max(cmd.lastIndexOf('/'), cmd.lastIndexOf('\\'));
-                    String name = cmd.substring(lastSlash + 1);
-                    if (name.toLowerCase().endsWith(".exe")) {
-                        name = name.substring(0, name.length() - 4);
-                    }
-                    return name;
-                })
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .collect(Collectors.toList());
+        return ProcessUtils.getRunningProcessNamesSorted();
     }
 
     private void removeApp(DetectedGame app) {

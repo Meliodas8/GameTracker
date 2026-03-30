@@ -1,5 +1,6 @@
 package dev.manel.gametracker.ui;
 
+import dev.manel.gametracker.core.ProcessUtils;
 import dev.manel.gametracker.core.config.ConfigManager;
 import dev.manel.gametracker.core.model.DetectedGame;
 import dev.manel.gametracker.core.model.GameSession;
@@ -257,22 +258,8 @@ public class GameListController {
         });
     }
 
-    // Misma lógica que ProcessWatcher.getRunningProcessNames() para que los nombres coincidan
     private List<String> getRunningProcessNames() {
-        return ProcessHandle.allProcesses()
-                .map(p -> p.info().command().orElse(""))
-                .filter(cmd -> !cmd.isBlank())
-                .map(cmd -> {
-                    int lastSlash = Math.max(cmd.lastIndexOf('/'), cmd.lastIndexOf('\\'));
-                    String name = cmd.substring(lastSlash + 1);
-                    if (name.toLowerCase().endsWith(".exe")) {
-                        name = name.substring(0, name.length() - 4);
-                    }
-                    return name;
-                })
-                .distinct()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .collect(Collectors.toList());
+        return ProcessUtils.getRunningProcessNamesSorted();
     }
 
     private String formatDuration(Duration d) {
