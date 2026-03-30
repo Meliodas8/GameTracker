@@ -58,14 +58,8 @@
                 <VBox styleClass="settings-section" spacing="8">
                     <Label text="Aplicaciones manuales"
                            styleClass="settings-section-title"/>
-                    <HBox alignment="CENTER_LEFT" spacing="8">
-                        <TextField fx:id="appNameField"
-                                   promptText="Nombre (ej: IntelliJ IDEA)"
-                                   HBox.hgrow="ALWAYS"/>
-                        <TextField fx:id="appExecField"
-                                   promptText="Ejecutable (ej: idea)"
-                                   prefWidth="150"/>
-                        <Button text="Añadir" onAction="#addApp"/>
+                    <HBox alignment="CENTER_RIGHT">
+                        <Button text="Nueva aplicación..." onAction="#openAddAppDialog"/>
                     </HBox>
                     <ListView fx:id="manualAppsList" prefHeight="200"/>
                 </VBox>

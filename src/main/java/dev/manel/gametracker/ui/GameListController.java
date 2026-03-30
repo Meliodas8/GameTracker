@@ -6,6 +6,9 @@ import dev.manel.gametracker.core.model.GameSession;
 import dev.manel.gametracker.session.SessionManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -177,61 +180,99 @@ public class GameListController {
 
     @FXML
     public void addManualApp() {
-
         Dialog<DetectedGame> dialog = new Dialog<>();
-        dialog.setTitle("Añadir aplicación");
+        dialog.setTitle("Añadir aplicación manual");
         dialog.setHeaderText(null);
+
+        // Aplicar el tema actual al diálogo
+        String css = ConfigManager.getInstance().getTheme().equals("dark") ? "styles-dark.css" : "styles.css";
+        dialog.getDialogPane().getStylesheets().add(
+                getClass().getResource("/dev/manel/gametracker/" + css).toExternalForm()
+        );
 
         ButtonType addButtonType = new ButtonType("Añadir", ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
 
-        VBox content = new VBox(12);
-        content.setPadding(new javafx.geometry.Insets(16));
-        content.setPrefWidth(320);
-
+        // Campos del formulario
         TextField nameField = new TextField();
-        nameField.setPromptText("Nombre (ej: IntelliJ IDEA)");
+        nameField.setPromptText("Nombre (ej: Brave)");
 
         TextField execField = new TextField();
-        execField.setPromptText("Ejecutable (ej: idea)");
+        execField.setPromptText("Ejecutable (ej: brave)");
 
-        content.getChildren().addAll(
-                new Label("Nombre"),
-                nameField,
-                new Label("Ejecutable"),
-                execField
+        // Lista de procesos en ejecución — misma lógica que ProcessWatcher
+        List<String> processes = getRunningProcessNames();
+
+        TextField filterField = new TextField();
+        filterField.setPromptText("Filtrar...");
+
+        ListView<String> processList = new ListView<>();
+        ObservableList<String> allProcesses = FXCollections.observableArrayList(processes);
+        processList.setItems(allProcesses);
+        processList.setPrefHeight(160);
+
+        filterField.textProperty().addListener((obs, old, val) ->
+                processList.setItems(val.isBlank()
+                        ? allProcesses
+                        : allProcesses.filtered(p -> p.toLowerCase().contains(val.toLowerCase())))
         );
 
+        // Al seleccionar un proceso se rellena automáticamente el campo ejecutable
+        processList.getSelectionModel().selectedItemProperty().addListener(
+                (obs, old, selected) -> { if (selected != null) execField.setText(selected); }
+        );
+
+        Label nameLabel = new Label("Nombre");
+        nameLabel.getStyleClass().add("settings-label");
+        Label execLabel = new Label("Ejecutable");
+        execLabel.getStyleClass().add("settings-label");
+        Label processLabel = new Label("Procesos en ejecución (haz clic para usar)");
+        processLabel.getStyleClass().add("settings-description");
+
+        VBox content = new VBox(8,
+                nameLabel, nameField,
+                execLabel, execField,
+                processLabel, filterField, processList
+        );
+        content.setPadding(new Insets(16));
+        content.setPrefWidth(400);
         dialog.getDialogPane().setContent(content);
-        dialog.getDialogPane().getStylesheets().add(
-                getClass().getResource("/dev/manel/gametracker/styles.css").toExternalForm()
-        );
 
-        // deshabilita el botón Añadir si algún campo está vacío
-        javafx.scene.Node addButton = dialog.getDialogPane().lookupButton(addButtonType);
+        // El botón Añadir se activa solo cuando ambos campos tienen texto
+        Button addButton = (Button) dialog.getDialogPane().lookupButton(addButtonType);
         addButton.setDisable(true);
         nameField.textProperty().addListener((obs, old, val) ->
                 addButton.setDisable(val.isBlank() || execField.getText().isBlank()));
         execField.textProperty().addListener((obs, old, val) ->
                 addButton.setDisable(val.isBlank() || nameField.getText().isBlank()));
 
-        dialog.setResultConverter(buttonType -> {
-            if (buttonType == addButtonType) {
-                return new DetectedGame(
-                        nameField.getText().trim(),
-                        "MANUAL",
-                        execField.getText().trim(),
-                        null
-                );
-            }
-            return null;
-        });
+        dialog.setResultConverter(bt -> bt == addButtonType
+                ? new DetectedGame(nameField.getText().trim(), "MANUAL", execField.getText().trim(), null)
+                : null
+        );
 
         dialog.showAndWait().ifPresent(app -> {
             ConfigManager.getInstance().addManualApp(app);
             loadGames();
         });
+    }
 
+    // Misma lógica que ProcessWatcher.getRunningProcessNames() para que los nombres coincidan
+    private List<String> getRunningProcessNames() {
+        return ProcessHandle.allProcesses()
+                .map(p -> p.info().command().orElse(""))
+                .filter(cmd -> !cmd.isBlank())
+                .map(cmd -> {
+                    int lastSlash = Math.max(cmd.lastIndexOf('/'), cmd.lastIndexOf('\\'));
+                    String name = cmd.substring(lastSlash + 1);
+                    if (name.toLowerCase().endsWith(".exe")) {
+                        name = name.substring(0, name.length() - 4);
+                    }
+                    return name;
+                })
+                .distinct()
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .collect(Collectors.toList());
     }
 
     private String formatDuration(Duration d) {
