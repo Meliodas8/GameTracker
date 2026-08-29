@@ -1,9 +1,14 @@
 package dev.manel.gametracker.session;
 
 import dev.manel.gametracker.core.ProcessUtils;
+import dev.manel.gametracker.core.config.PathManager;
 import dev.manel.gametracker.core.model.DetectedGame;
 import dev.manel.gametracker.providers.GameSourceRegistry;
 
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -14,11 +19,15 @@ import java.util.stream.Stream;
 
 public class ProcessWatcher {
 
-    private static final int SCAN_INTERVAL_SECONDS = 5;
+    static final int SCAN_INTERVAL_SECONDS = 5;
 
     private final GameSourceRegistry registry;
     private final SessionManager sessionManager;
     private final ScheduledExecutorService scheduler;
+
+    // Se mantienen abiertos mientras viva el proceso: cerrarlos libera el lock.
+    private FileChannel lockChannel;
+    private FileLock lock;
 
     public ProcessWatcher(GameSourceRegistry registry, SessionManager sessionManager) {
         this.registry = registry;
@@ -30,14 +39,54 @@ public class ProcessWatcher {
         });
     }
 
+    /**
+     * Arranca la vigilancia solo si esta instancia consigue el lock exclusivo.
+     * Dos vigilantes a la vez (daemon + GUI) llevan cada uno su propia lista de
+     * sesiones en memoria y reescriben sessions.json entero: gana el ultimo en
+     * escribir y el otro pierde sus sesiones sin avisar.
+     */
     public void start() {
+        if (!acquireLock()) {
+            System.out.println("Ya hay otra instancia vigilando procesos; "
+                    + "esta no contara sesiones");
+            return;
+        }
         scheduler.scheduleAtFixedRate(this::scan, 0, SCAN_INTERVAL_SECONDS, TimeUnit.SECONDS);
         System.out.println("ProcessWatcher iniciado");
     }
 
     public void stop() {
         scheduler.shutdown();
+        sessionManager.endAllActive();
+        releaseLock();
         System.out.println("ProcessWatcher detenido");
+    }
+
+    private boolean acquireLock() {
+        try {
+            lockChannel = FileChannel.open(
+                    PathManager.getInstance().getDataDir().resolve("watcher.lock"),
+                    StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+            lock = lockChannel.tryLock();   // null si otro proceso lo tiene
+            if (lock == null) {
+                lockChannel.close();
+                lockChannel = null;
+            }
+            return lock != null;
+        } catch (IOException e) {
+            // Sin lock utilizable, es mas seguro no vigilar que duplicar sesiones
+            System.err.println("No se pudo obtener el lock: " + e.getMessage());
+            return false;
+        }
+    }
+
+    private void releaseLock() {
+        try {
+            if (lock != null) lock.release();
+            if (lockChannel != null) lockChannel.close();
+        } catch (IOException e) {
+            System.err.println("Error liberando el lock: " + e.getMessage());
+        }
     }
 
     private void scan() {

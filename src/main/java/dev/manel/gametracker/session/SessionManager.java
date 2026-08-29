@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,9 +22,12 @@ public class SessionManager {
 
     private static final SessionManager INSTANCE = new SessionManager();
 
+    /** Guarda el juego junto al inicio para poder cerrar sesiones al apagar. */
+    private record Active(DetectedGame game, Instant start) {}
+
     private final Gson gson;
     private final Path sessionsFile;
-    private final Map<String, Instant> activeSessions = new HashMap<>();
+    private final Map<String, Active> activeSessions = new HashMap<>();
     private final List<GameSession> completedSessions = new ArrayList<>();
 
     private SessionManager() {
@@ -41,24 +45,46 @@ public class SessionManager {
 
     public void startSession(DetectedGame game) {
         if (!activeSessions.containsKey(game.executableName())) {
-            activeSessions.put(game.executableName(), Instant.now());
+            activeSessions.put(game.executableName(), new Active(game, Instant.now()));
             System.out.println("Sesión iniciada: " + game.name());
         }
     }
 
     public void endSession(DetectedGame game) {
-        Instant start = activeSessions.remove(game.executableName());
-        if (start != null) {
-            GameSession session = new GameSession(
-                    game.name(),
-                    game.platform(),
-                    start,
-                    Instant.now()
-            );
-            completedSessions.add(session);
+        Active active = activeSessions.remove(game.executableName());
+        if (active != null) {
+            record(active, Instant.now());
             saveSessions();
-            System.out.println("Sesión terminada: " + game.name());
         }
+    }
+
+    /**
+     * Cierra y persiste todas las sesiones abiertas. Sin esto, apagar el proceso
+     * perdia el tiempo acumulado: activeSessions solo vive en memoria.
+     */
+    public void endAllActive() {
+        if (activeSessions.isEmpty()) return;
+        Instant now = Instant.now();
+        activeSessions.values().forEach(active -> record(active, now));
+        activeSessions.clear();
+        saveSessions();
+    }
+
+    /**
+     * Una sesion que no dura mas de un ciclo de escaneo es un artefacto de
+     * deteccion: el proceso aparece al lanzar el juego, desaparece mientras
+     * carga y vuelve. Se descarta en vez de ensuciar el historico.
+     */
+    private void record(Active active, Instant end) {
+        String name = active.game().name();
+        if (Duration.between(active.start(), end).getSeconds()
+                <= ProcessWatcher.SCAN_INTERVAL_SECONDS) {
+            System.out.println("Sesión descartada (demasiado corta): " + name);
+            return;
+        }
+        completedSessions.add(new GameSession(
+                name, active.game().platform(), active.start(), end));
+        System.out.println("Sesión terminada: " + name);
     }
 
     public List<GameSession> getCompletedSessions() {
