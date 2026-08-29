@@ -34,7 +34,7 @@ public class ProcessUtils {
 
         /** Valor sugerido para el campo ejecutable al hacer clic en este proceso. */
         public String suggestedExecName() {
-            return comm;
+            return exePath.isBlank() ? comm : exePath;
         }
     }
 
