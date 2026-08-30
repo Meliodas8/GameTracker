@@ -11,12 +11,14 @@ import javafx.scene.control.Button;
 import javafx.scene.layout.StackPane;
 
 import java.io.IOException;
+import java.util.List;
 
 public class MainController {
 
     @FXML private StackPane contentArea;
     @FXML private Button btnJuegos;
     @FXML private Button btnHistorial;
+    @FXML private Button btnEstadisticas;
     @FXML private Button btnAjustes;
 
     /** Carga main.fxml con el bundle del idioma activo. */
@@ -60,6 +62,12 @@ public class MainController {
     }
 
     @FXML
+    public void showStats() {
+        setActiveButton(btnEstadisticas);
+        loadView("stats.fxml");
+    }
+
+    @FXML
     public void showSettings() {
         setActiveButton(btnAjustes);
         loadView("settings.fxml");
@@ -79,13 +87,9 @@ public class MainController {
     }
 
     private void setActiveButton(Button active) {
-        btnJuegos.pseudoClassStateChanged(
-                javafx.css.PseudoClass.getPseudoClass("active"), false);
-        btnHistorial.pseudoClassStateChanged(
-                javafx.css.PseudoClass.getPseudoClass("active"), false);
-        btnAjustes.pseudoClassStateChanged(
-                javafx.css.PseudoClass.getPseudoClass("active"), false);
-        active.pseudoClassStateChanged(
-                javafx.css.PseudoClass.getPseudoClass("active"), true);
+        javafx.css.PseudoClass activeClass = javafx.css.PseudoClass.getPseudoClass("active");
+        for (Button b : List.of(btnJuegos, btnHistorial, btnEstadisticas, btnAjustes)) {
+            b.pseudoClassStateChanged(activeClass, b == active);
+        }
     }
 }

@@ -62,14 +62,21 @@ public final class I18n {
     }
 
     /** Día y mes, sin año, en el orden propio del idioma. */
-    public static String formatDayMonth(Instant instant) {
+    public static String formatDayMonth(TemporalAccessor temporal) {
         String pattern = java.time.format.DateTimeFormatterBuilder
                 .getLocalizedDateTimePattern(FormatStyle.SHORT, null, java.time.chrono.IsoChronology.INSTANCE, locale)
                 .replaceAll("[/.\\-]?\\s?y+[/.\\-]?", "")
                 .trim();
         return DateTimeFormatter.ofPattern(pattern, locale)
                 .withZone(ZoneId.systemDefault())
-                .format(instant);
+                .format(temporal);
+    }
+
+    /** Mes abreviado y año, para el eje de las gráficas: "ago 2026" / "Aug 2026". */
+    public static String formatMonthYear(TemporalAccessor temporal) {
+        return DateTimeFormatter.ofPattern("MMM yyyy", locale)
+                .withZone(ZoneId.systemDefault())
+                .format(temporal);
     }
 
     public static String formatDuration(Duration d) {

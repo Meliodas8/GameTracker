@@ -1,8 +1,6 @@
 package dev.manel.gametracker;
 
 import dev.manel.gametracker.providers.GameSourceRegistry;
-import dev.manel.gametracker.providers.ManualProvider;
-import dev.manel.gametracker.providers.SteamProvider;
 import dev.manel.gametracker.session.ProcessWatcher;
 import dev.manel.gametracker.session.SessionManager;
 import javafx.application.Application;
@@ -26,9 +24,7 @@ public class MainApp {
     private static void startDaemon() {
         System.out.println("GameTracker arrancando en modo daemon...");
 
-        GameSourceRegistry registry = new GameSourceRegistry();
-        registry.register(new SteamProvider());
-        registry.register(new ManualProvider());
+        GameSourceRegistry registry = GameSourceRegistry.withDefaults();
 
         ProcessWatcher watcher = new ProcessWatcher(registry, SessionManager.getInstance());
         watcher.start();

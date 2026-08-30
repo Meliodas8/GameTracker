@@ -15,6 +15,9 @@
             <Button fx:id="btnHistorial" text="%nav.history"
                     styleClass="nav-item"
                     onAction="#showHistory"/>
+            <Button fx:id="btnEstadisticas" text="%nav.stats"
+                    styleClass="nav-item"
+                    onAction="#showStats"/>
             <Button fx:id="btnAjustes" text="%nav.settings"
                     styleClass="nav-item"
                     onAction="#showSettings"/>

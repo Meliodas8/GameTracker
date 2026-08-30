@@ -4,8 +4,6 @@ import dev.manel.gametracker.core.config.ConfigManager;
 import dev.manel.gametracker.core.config.I18n;
 import dev.manel.gametracker.providers.GameSourceRegistry;
 import dev.manel.gametracker.ui.MainController;
-import dev.manel.gametracker.providers.ManualProvider;
-import dev.manel.gametracker.providers.SteamProvider;
 import dev.manel.gametracker.session.ProcessWatcher;
 import dev.manel.gametracker.session.SessionManager;
 import javafx.application.Application;
@@ -23,9 +21,7 @@ public class GameTrackerApp extends Application {
     public void start(Stage stage) throws IOException {
         I18n.apply(ConfigManager.getInstance().getLanguage());
 
-        GameSourceRegistry registry = new GameSourceRegistry();
-        registry.register(new SteamProvider());
-        registry.register(new ManualProvider());
+        GameSourceRegistry registry = GameSourceRegistry.withDefaults();
 
         watcher = new ProcessWatcher(registry, SessionManager.getInstance());
         watcher.start();

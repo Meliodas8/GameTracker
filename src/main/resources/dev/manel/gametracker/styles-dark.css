@@ -397,3 +397,120 @@
     -fx-background-color: #444441;
     -fx-text-fill: #D3D1C7;
 }
+/* --- gráficas --- */
+.chart {
+    -fx-background-color: transparent;
+    -fx-padding: 4;
+}
+
+.chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+.chart-vertical-grid-lines,
+.chart-horizontal-zero-line,
+.chart-vertical-zero-line {
+    -fx-stroke: transparent;
+}
+
+.chart-horizontal-grid-lines {
+    -fx-stroke: #3A3A37;
+}
+
+.axis {
+    -fx-tick-label-fill: #888780;
+    -fx-tick-label-font-size: 10px;
+    -fx-border-color: transparent;
+}
+
+.axis-label {
+    -fx-text-fill: #888780;
+    -fx-font-size: 10px;
+}
+
+.chart-bar {
+    -fx-bar-fill: #9FE1CB;
+}
+
+.chart-legend {
+    -fx-background-color: transparent;
+}
+
+.chart-legend-item {
+    -fx-text-fill: #D3D1C7;
+    -fx-font-size: 11px;
+}
+
+/* ── selectores desplegables ── */
+/* MenuButton no hereda de .button: sin esto se queda con el aspecto por defecto */
+.menu-button {
+    -fx-background-color: transparent;
+    -fx-border-color: #5F5E5A;
+    -fx-border-width: 0.5px;
+    -fx-border-radius: 8px;
+    -fx-background-radius: 8px;
+    -fx-cursor: hand;
+    -fx-padding: 2 4 2 4;
+}
+
+.menu-button > .label {
+    -fx-text-fill: #888780;
+    -fx-padding: 3 4 3 6;
+}
+
+.menu-button:hover,
+.menu-button:showing {
+    -fx-background-color: #444441;
+}
+
+.menu-button:disabled {
+    -fx-opacity: 0.5;
+}
+
+.menu-button > .arrow-button > .arrow,
+.combo-box > .arrow-button > .arrow {
+    -fx-background-color: #888780;
+}
+
+.combo-box {
+    -fx-cursor: hand;
+}
+
+.combo-box-popup .list-view {
+    -fx-background-radius: 8px;
+}
+
+.combo-box-popup .list-cell {
+    -fx-padding: 5 10 5 10;
+}
+
+.combo-box-popup .list-cell:filled:selected {
+    -fx-background-color: #444441;
+}
+
+.context-menu {
+    -fx-background-color: #333331;
+    -fx-border-color: #444441;
+    -fx-border-width: 0.5px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 4;
+}
+
+.menu-item {
+    -fx-background-radius: 6px;
+    -fx-padding: 5 10 5 6;
+}
+
+.menu-item .label {
+    -fx-text-fill: #D3D1C7;
+}
+
+.menu-item:focused {
+    -fx-background-color: #444441;
+}
+
+/* la marca de verificación de las casillas del filtro */
+.check-menu-item:checked > .left-container > .radio {
+    -fx-background-color: #9FE1CB;
+}

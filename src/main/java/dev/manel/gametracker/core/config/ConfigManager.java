@@ -36,6 +36,25 @@ public class ConfigManager {
         return config.theme != null ? config.theme : "light";
     }
 
+    /**
+     * Juegos que el usuario ha quitado de las graficas. Solo afecta a la vista de
+     * estadisticas: se siguen contando sesiones y siguen en Juegos e Historial.
+     * La clave es el nombre porque es lo unico que guardan las sesiones.
+     */
+    public boolean isHiddenInStats(String gameName) {
+        return config.statsHiddenGames.stream().anyMatch(g -> g.equalsIgnoreCase(gameName));
+    }
+
+    public void setHiddenInStats(String gameName, boolean hidden) {
+        if (hidden == isHiddenInStats(gameName)) return;
+        if (hidden) {
+            config.statsHiddenGames.add(gameName);
+        } else {
+            config.statsHiddenGames.removeIf(g -> g.equalsIgnoreCase(gameName));
+        }
+        saveConfig();
+    }
+
     public String getLanguage() {
         if (config.language == null) {
             config.language = I18n.systemLanguage();
@@ -87,6 +106,7 @@ public class ConfigManager {
     // clase interna que representa la estructura del JSON
     private static class Config {
         List<DetectedGame> manualApps = new ArrayList<>();
+        List<String> statsHiddenGames = new ArrayList<>();
         String theme = "light";
         String language = null;
     }

@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.chart.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            fx:controller="dev.manel.gametracker.ui.StatsController">
+    <top>
+        <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="12">
+            <Label text="%stats.title" styleClass="topbar-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <MenuButton fx:id="gameFilter" text="%stats.filter"/>
+            <ComboBox fx:id="rangeSelector" onAction="#onRangeChanged"/>
+        </HBox>
+    </top>
+
+    <center>
+        <ScrollPane fitToWidth="true" style="-fx-background-color: transparent;">
+            <VBox spacing="16" style="-fx-padding: 16;">
+
+                <HBox fx:id="tiles" spacing="12"/>
+
+                <VBox styleClass="settings-section" spacing="8">
+                    <Label fx:id="chartTitle" text="%stats.perDay" styleClass="settings-section-title"/>
+                    <BarChart fx:id="dailyChart" prefHeight="260" legendVisible="false"
+                              animated="false" categoryGap="4" barGap="1">
+                        <xAxis><CategoryAxis fx:id="dayAxis"/></xAxis>
+                        <yAxis><NumberAxis fx:id="hoursAxis" label="%stats.axis.hours"/></yAxis>
+                    </BarChart>
+                </VBox>
+
+                <VBox styleClass="settings-section" spacing="8">
+                    <Label text="%stats.byGame" styleClass="settings-section-title"/>
+                    <PieChart fx:id="gameChart" prefHeight="280" animated="false"
+                              labelsVisible="false" legendSide="RIGHT"/>
+                </VBox>
+
+            </VBox>
+        </ScrollPane>
+    </center>
+</BorderPane>
