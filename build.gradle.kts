@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     java
     application
@@ -52,58 +54,48 @@ tasks.jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-tasks.register<Exec>("jpackageLinux") {
-    dependsOn("jar")
-    commandLine(
-        "jpackage",
-        "--input", "build/libs",
-        "--main-jar", "GameTracker-1.0-SNAPSHOT.jar",
-        "--main-class", "dev.manel.gametracker.MainApp",
-        "--name", "GameTracker",
-        "--app-version", "1.0",
-        "--type", "deb",
-        "--dest", "build/dist",
-        "--module-path", configurations.runtimeClasspath.get()
-            .filter { it.name.contains("javafx") }
-            .joinToString(":") { it.absolutePath },
-        "--add-modules", "javafx.controls,javafx.fxml,java.net.http,jdk.crypto.ec"
-    )
+/**
+ * La version sale de version.properties, que es lo que el workflow reescribe a
+ * partir del tag. Sin esto los ficheros publicados se llamaban siempre 1.0.
+ */
+val appVersion: String = Properties().apply {
+    file("src/main/resources/dev/manel/gametracker/version.properties")
+        .inputStream().use { load(it) }
+}.getProperty("version") ?: "1.0.0"
+
+/** Las tres tareas de empaquetado solo se diferencian en tipo, separador y extras. */
+fun registerJpackage(
+    taskName: String,
+    type: String,
+    pathSeparator: String = ":",
+    extraModules: List<String> = emptyList(),
+    extraArgs: List<String> = emptyList()
+) {
+    tasks.register<Exec>(taskName) {
+        dependsOn("jar")
+        val jar = tasks.jar.get().archiveFile.get().asFile
+        val modules = listOf("javafx.controls", "javafx.fxml", "java.net.http", "jdk.crypto.ec") + extraModules
+        commandLine(
+            listOf(
+                "jpackage",
+                "--input", jar.parent,
+                "--main-jar", jar.name,
+                "--main-class", "dev.manel.gametracker.MainApp",
+                "--name", "GameTracker",
+                "--app-version", appVersion,
+                "--type", type,
+                "--dest", "build/dist",
+                "--module-path", configurations.runtimeClasspath.get()
+                    .filter { it.name.contains("javafx") }
+                    .joinToString(pathSeparator) { it.absolutePath },
+                "--add-modules", modules.joinToString(",")
+            ) + extraArgs
+        )
+    }
 }
 
-tasks.register<Exec>("jpackageWindows") {
-    dependsOn("jar")
-    commandLine(
-        "jpackage",
-        "--input", "build/libs",
-        "--main-jar", "GameTracker-1.0-SNAPSHOT.jar",
-        "--main-class", "dev.manel.gametracker.MainApp",
-        "--name", "GameTracker",
-        "--app-version", "1.0",
-        "--type", "exe",
-        "--dest", "build/dist",
-        "--module-path", configurations.runtimeClasspath.get()
-            .filter { it.name.contains("javafx") }
-            .joinToString(";") { it.absolutePath },
-        "--add-modules", "javafx.controls,javafx.fxml,java.net.http,jdk.crypto.ec,jdk.crypto.mscapi",
-        "--win-menu",
-        "--win-shortcut"
-    )
-}
-
-tasks.register<Exec>("jpackageMac") {
-    dependsOn("jar")
-    commandLine(
-        "jpackage",
-        "--input", "build/libs",
-        "--main-jar", "GameTracker-1.0-SNAPSHOT.jar",
-        "--main-class", "dev.manel.gametracker.MainApp",
-        "--name", "GameTracker",
-        "--app-version", "1.0",
-        "--type", "dmg",
-        "--dest", "build/dist",
-        "--module-path", configurations.runtimeClasspath.get()
-            .filter { it.name.contains("javafx") }
-            .joinToString(":") { it.absolutePath },
-        "--add-modules", "javafx.controls,javafx.fxml,java.net.http,jdk.crypto.ec"
-    )
-}
+registerJpackage("jpackageLinux", "deb")
+registerJpackage("jpackageWindows", "exe", pathSeparator = ";",
+    extraModules = listOf("jdk.crypto.mscapi"),
+    extraArgs = listOf("--win-menu", "--win-shortcut"))
+registerJpackage("jpackageMac", "dmg")

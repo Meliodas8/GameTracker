@@ -68,7 +68,7 @@ jobs:
           printf '#!/bin/bash\nHERE="$(dirname "$(readlink -f "$0")")"\nexport PATH="$HERE/usr/bin:$PATH"\nexec java -jar "$HERE/usr/bin/GameTracker-1.0-SNAPSHOT.jar" "$@"\n' > AppDir/AppRun
           chmod +x AppDir/AppRun
 
-          ARCH=x86_64 ./appimagetool-squashfs/AppRun AppDir GameTracker-x86_64.AppImage
+          ARCH=x86_64 ./appimagetool-squashfs/AppRun AppDir "GameTracker-${GITHUB_REF_NAME#v}-x86_64.AppImage"
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
@@ -84,7 +84,7 @@ jobs:
           name: GameTracker-${{ runner.os }}
           path: |
             build/dist/*
-            GameTracker-x86_64.AppImage
+            GameTracker-*-x86_64.AppImage
 
   release:
     needs: build
@@ -115,8 +115,9 @@ jobs:
       - name: Calculate sha256
         id: sha256
         run: |
-          wget -q "https://github.com/Meliodas8/GameTracker/releases/download/${GITHUB_REF_NAME}/GameTracker-x86_64.AppImage"
-          echo "SHA256=$(sha256sum GameTracker-x86_64.AppImage | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+          APPIMAGE="GameTracker-${GITHUB_REF_NAME#v}-x86_64.AppImage"
+          wget -q "https://github.com/Meliodas8/GameTracker/releases/download/${GITHUB_REF_NAME}/${APPIMAGE}"
+          echo "SHA256=$(sha256sum "${APPIMAGE}" | cut -d' ' -f1)" >> $GITHUB_OUTPUT
 
       - name: Update PKGBUILD
         run: |

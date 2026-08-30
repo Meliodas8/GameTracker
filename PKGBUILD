@@ -7,7 +7,7 @@ arch=('x86_64')
 url="https://github.com/Meliodas8/GameTracker"
 license=('MIT')
 depends=('fuse2' 'java-runtime>=21')
-source=("GameTracker-${pkgver}-x86_64.AppImage::https://github.com/Meliodas8/GameTracker/releases/download/v${pkgver}/GameTracker-x86_64.AppImage")
+source=("https://github.com/Meliodas8/GameTracker/releases/download/v${pkgver}/GameTracker-${pkgver}-x86_64.AppImage")
 sha256sums=('SKIP')
 options=('!strip')
 
