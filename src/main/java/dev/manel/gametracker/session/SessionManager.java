@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -27,15 +29,22 @@ public class SessionManager {
 
     private final Gson gson;
     private final Path sessionsFile;
+    private final Clock clock;
     private final Map<String, Active> activeSessions = new HashMap<>();
     private final List<GameSession> completedSessions = new ArrayList<>();
 
     private SessionManager() {
+        this(PathManager.getInstance().getSessionsFile(), Clock.systemUTC());
+    }
+
+    /** Fichero y reloj explícitos: los tests no tocan los datos reales del usuario. */
+    SessionManager(Path sessionsFile, Clock clock) {
         this.gson = new GsonBuilder()
                 .registerTypeAdapter(Instant.class, new InstantAdapter())
                 .setPrettyPrinting()
                 .create();
-        this.sessionsFile = PathManager.getInstance().getSessionsFile();
+        this.sessionsFile = sessionsFile;
+        this.clock = clock;
         loadSessions();
     }
 
@@ -45,7 +54,7 @@ public class SessionManager {
 
     public void startSession(DetectedGame game) {
         if (!activeSessions.containsKey(game.executableName())) {
-            activeSessions.put(game.executableName(), new Active(game, Instant.now()));
+            activeSessions.put(game.executableName(), new Active(game, clock.instant()));
             System.out.println("Sesión iniciada: " + game.name());
         }
     }
@@ -53,7 +62,7 @@ public class SessionManager {
     public void endSession(DetectedGame game) {
         Active active = activeSessions.remove(game.executableName());
         if (active != null) {
-            record(active, Instant.now());
+            record(active, clock.instant());
             saveSessions();
         }
     }
@@ -64,7 +73,7 @@ public class SessionManager {
      */
     public void endAllActive() {
         if (activeSessions.isEmpty()) return;
-        Instant now = Instant.now();
+        Instant now = clock.instant();
         activeSessions.values().forEach(active -> record(active, now));
         activeSessions.clear();
         saveSessions();
@@ -104,6 +113,21 @@ public class SessionManager {
             if (loaded != null) completedSessions.addAll(loaded);
         } catch (IOException e) {
             System.err.println("Error cargando sesiones: " + e.getMessage());
+        } catch (RuntimeException e) {
+            // JSON corrupto: arrancar en blanco es mejor que no arrancar, pero el
+            // fichero se aparta en vez de sobrescribirse para no perder el historico.
+            System.err.println("sessions.json ilegible: " + e.getMessage());
+            quarantineSessionsFile();
+        }
+    }
+
+    private void quarantineSessionsFile() {
+        Path backup = sessionsFile.resolveSibling(sessionsFile.getFileName() + ".corrupt");
+        try {
+            Files.move(sessionsFile, backup, StandardCopyOption.REPLACE_EXISTING);
+            System.err.println("Guardado como " + backup);
+        } catch (IOException e) {
+            System.err.println("No se pudo apartar el fichero: " + e.getMessage());
         }
     }
 
