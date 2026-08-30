@@ -1,26 +1,21 @@
 package dev.manel.gametracker.ui;
 
-import dev.manel.gametracker.core.ProcessUtils;
 import dev.manel.gametracker.core.config.ConfigManager;
-import dev.manel.gametracker.core.model.DetectedGame;
+import dev.manel.gametracker.core.config.I18n;
 import dev.manel.gametracker.core.model.GameSession;
 import dev.manel.gametracker.session.SessionManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
-import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
-import java.time.Duration;
+
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
@@ -107,16 +102,16 @@ public class GameListController {
 
         VBox right = new VBox(4);
         right.setAlignment(javafx.geometry.Pos.CENTER_RIGHT);
-        Label total = new Label(formatDuration(game.getTotalDuration()));
+        Label total = new Label(I18n.formatDuration(game.getTotalDuration()));
         total.getStyleClass().add("game-total");
 
         boolean isRunning = SessionManager.getInstance().isActiveByName(game.getName());
         if (isRunning) {
-            Label badge = new Label("jugando");
+            Label badge = new Label(I18n.get("games.badge.playing"));
             badge.getStyleClass().add("badge-running");
             right.getChildren().addAll(total, badge);
         } else if (game.getPlatform().equals("MANUAL")) {
-            Label badge = new Label("manual");
+            Label badge = new Label(I18n.get("games.badge.manual"));
             badge.getStyleClass().add("badge-manual");
             right.getChildren().addAll(total, badge);
         } else {
@@ -133,15 +128,15 @@ public class GameListController {
         Label title = new Label(game.getName());
         title.getStyleClass().add("detail-title");
 
-        VBox totalBlock = buildStatBlock("Tiempo total",
-                formatDuration(game.getTotalDuration()),
-                game.getSessionCount() + " sesiones");
+        VBox totalBlock = buildStatBlock(I18n.get("detail.totalTime"),
+                I18n.formatDuration(game.getTotalDuration()),
+                I18n.get("detail.sessionCount", game.getSessionCount()));
 
-        VBox weekBlock = buildStatBlock("Esta semana",
-                formatDuration(game.getThisWeekDuration()),
-                "últimos 7 días");
+        VBox weekBlock = buildStatBlock(I18n.get("detail.thisWeek"),
+                I18n.formatDuration(game.getThisWeekDuration()),
+                I18n.get("detail.last7days"));
 
-        Label sessionsTitle = new Label("ÚLTIMAS SESIONES");
+        Label sessionsTitle = new Label(I18n.get("detail.lastSessions"));
         sessionsTitle.getStyleClass().add("detail-section-title");
 
         VBox sessionList = new VBox(4);
@@ -150,11 +145,11 @@ public class GameListController {
                 .limit(5)
                 .forEach(s -> {
                     HBox row = new HBox();
-                    Label date = new Label(formatDate(s.startTime()));
+                    Label date = new Label(I18n.formatDayMonth(s.startTime()));
                     date.getStyleClass().add("session-date");
                     Region spacer = new Region();
                     HBox.setHgrow(spacer, Priority.ALWAYS);
-                    Label dur = new Label(formatDuration(s.duration()));
+                    Label dur = new Label(I18n.formatDuration(s.duration()));
                     dur.getStyleClass().add("session-duration");
                     row.getChildren().addAll(date, spacer, dur);
                     row.getStyleClass().add("session-item");
@@ -181,112 +176,18 @@ public class GameListController {
 
     @FXML
     public void addManualApp() {
-        Dialog<DetectedGame> dialog = new Dialog<>();
-        dialog.setTitle("Añadir aplicación manual");
-        dialog.setHeaderText(null);
-
-        // Aplicar el tema actual al diálogo
-        String css = ConfigManager.getInstance().getTheme().equals("dark") ? "styles-dark.css" : "styles.css";
-        dialog.getDialogPane().getStylesheets().add(
-                getClass().getResource("/dev/manel/gametracker/" + css).toExternalForm()
-        );
-
-        ButtonType addButtonType = new ButtonType("Añadir", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
-
-        // Campos del formulario
-        TextField nameField = new TextField();
-        nameField.setPromptText("Nombre (ej: Brave)");
-
-        TextField execField = new TextField();
-        execField.setPromptText("Ejecutable (ej: brave)");
-
-        // Lista de procesos en ejecución — misma lógica que ProcessWatcher
-        List<ProcessUtils.ProcessInfo> processes = ProcessUtils.getRunningProcessInfosSorted();
-
-        TextField filterField = new TextField();
-        filterField.setPromptText("Filtrar...");
-
-        ListView<ProcessUtils.ProcessInfo> processList = new ListView<>();
-        ObservableList<ProcessUtils.ProcessInfo> allProcesses = FXCollections.observableArrayList(processes);
-        processList.setItems(allProcesses);
-        processList.setPrefHeight(160);
-        processList.setCellFactory(lv -> new ListCell<>() {
-            @Override
-            protected void updateItem(ProcessUtils.ProcessInfo item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.displayLabel());
-            }
-        });
-
-        filterField.textProperty().addListener((obs, old, val) ->
-                processList.setItems(val.isBlank()
-                        ? allProcesses
-                        : allProcesses.filtered(p -> p.displayLabel().toLowerCase().contains(val.toLowerCase())))
-        );
-
-        // Al seleccionar un proceso se rellena automáticamente el campo ejecutable
-        processList.getSelectionModel().selectedItemProperty().addListener(
-                (obs, old, selected) -> { if (selected != null) execField.setText(selected.suggestedExecName()); }
-        );
-
-        Label nameLabel = new Label("Nombre");
-        nameLabel.getStyleClass().add("settings-label");
-        Label execLabel = new Label("Ejecutable");
-        execLabel.getStyleClass().add("settings-label");
-        Label processLabel = new Label("Procesos en ejecución — clic para usar, o escribe parte de la ruta para apps Java/Python");
-        processLabel.getStyleClass().add("settings-description");
-
-        VBox content = new VBox(8,
-                nameLabel, nameField,
-                execLabel, execField,
-                processLabel, filterField, processList
-        );
-        content.setPadding(new Insets(16));
-        content.setPrefWidth(400);
-        dialog.getDialogPane().setContent(content);
-
-        // El botón Añadir se activa solo cuando ambos campos tienen texto
-        Button addButton = (Button) dialog.getDialogPane().lookupButton(addButtonType);
-        addButton.setDisable(true);
-        nameField.textProperty().addListener((obs, old, val) ->
-                addButton.setDisable(val.isBlank() || execField.getText().isBlank()));
-        execField.textProperty().addListener((obs, old, val) ->
-                addButton.setDisable(val.isBlank() || nameField.getText().isBlank()));
-
-        dialog.setResultConverter(bt -> bt == addButtonType
-                ? new DetectedGame(nameField.getText().trim(), "MANUAL", execField.getText().trim(), null)
-                : null
-        );
-
-        dialog.showAndWait().ifPresent(app -> {
+        AddAppDialog.show().ifPresent(app -> {
             ConfigManager.getInstance().addManualApp(app);
             loadGames();
         });
     }
 
-
-    private String formatDuration(Duration d) {
-        long hours = d.toHours();
-        long minutes = d.toMinutesPart();
-        long seconds = d.toSecondsPart();
-        if (hours > 0) return hours + "h " + minutes + "m";
-        if (minutes > 0) return minutes + "m";
-        return seconds + "s";
-    }
-
     private String formatLastPlayed(Instant instant) {
-        if (instant == null) return "Sin sesiones";
+        if (instant == null) return I18n.get("games.noSessions");
         LocalDate sessionDay = instant.atZone(ZoneId.systemDefault()).toLocalDate();
         long days = ChronoUnit.DAYS.between(sessionDay, LocalDate.now());
-        if (days == 0) return "Última sesión: hoy";
-        if (days == 1) return "Última sesión: ayer";
-        return "Última sesión: hace " + days + " días";
-    }
-
-    private String formatDate(Instant instant) {
-        return DateTimeFormatter.ofPattern("dd/MM")
-                .withZone(ZoneId.systemDefault())
-                .format(instant);
+        if (days == 0) return I18n.get("games.lastSession.today");
+        if (days == 1) return I18n.get("games.lastSession.yesterday");
+        return I18n.get("games.lastSession.daysAgo", days);
     }
 }

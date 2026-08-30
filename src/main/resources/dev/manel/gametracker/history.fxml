@@ -6,12 +6,12 @@
             fx:controller="dev.manel.gametracker.ui.HistoryController">
     <top>
         <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="12">
-            <Label text="Historial" styleClass="topbar-title"/>
+            <Label text="%history.title" styleClass="topbar-title"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <ComboBox fx:id="gameFilter" promptText="Todos los juegos"/>
-            <ToggleButton fx:id="btnDay" text="Por día"
+            <ComboBox fx:id="gameFilter" promptText="%history.allGames"/>
+            <ToggleButton fx:id="btnDay" text="%history.byDay"
                           onAction="#onPeriodChanged"/>
-            <ToggleButton fx:id="btnWeek" text="Por semana"
+            <ToggleButton fx:id="btnWeek" text="%history.byWeek"
                           onAction="#onPeriodChanged"/>
         </HBox>
     </top>
@@ -20,10 +20,10 @@
         <VBox spacing="12" style="-fx-padding: 16;">
             <TableView fx:id="historyTable" VBox.vgrow="ALWAYS">
                 <columns>
-                    <TableColumn fx:id="colDate" text="Fecha" prefWidth="120"/>
-                    <TableColumn fx:id="colGame" text="Juego" prefWidth="220"/>
-                    <TableColumn fx:id="colDuration" text="Tiempo" prefWidth="100"/>
-                    <TableColumn fx:id="colSessions" text="Sesiones" prefWidth="80"/>
+                    <TableColumn fx:id="colDate" text="%history.col.date" prefWidth="120"/>
+                    <TableColumn fx:id="colGame" text="%history.col.game" prefWidth="220"/>
+                    <TableColumn fx:id="colDuration" text="%history.col.duration" prefWidth="100"/>
+                    <TableColumn fx:id="colSessions" text="%history.col.sessions" prefWidth="80"/>
                 </columns>
             </TableView>
         </VBox>

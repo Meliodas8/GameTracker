@@ -6,9 +6,9 @@
             fx:controller="dev.manel.gametracker.ui.GameListController">
     <top>
         <HBox styleClass="topbar" alignment="CENTER_LEFT" spacing="8">
-            <Label text="Mis juegos" styleClass="topbar-title"/>
+            <Label text="%games.title" styleClass="topbar-title"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Button text="+ Añadir app" onAction="#addManualApp"/>
+            <Button text="%games.addApp" onAction="#addManualApp"/>
         </HBox>
     </top>
 

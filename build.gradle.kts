@@ -34,6 +34,8 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.12.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.12.1")
+    // el launcher que trae Gradle 8.13 es más viejo que el engine 5.12 y rompe el descubrimiento
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.12.1")
 }
 
 tasks.withType<Test> {

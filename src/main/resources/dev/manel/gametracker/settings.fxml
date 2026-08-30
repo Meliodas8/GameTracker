@@ -6,7 +6,7 @@
             fx:controller="dev.manel.gametracker.ui.SettingsController">
     <top>
         <HBox styleClass="topbar" alignment="CENTER_LEFT">
-            <Label text="Ajustes" styleClass="topbar-title"/>
+            <Label text="%settings.title" styleClass="topbar-title"/>
         </HBox>
     </top>
 
@@ -16,50 +16,58 @@
 
                 <!-- Arranque con el sistema -->
                 <VBox styleClass="settings-section" spacing="8">
-                    <Label text="Sistema" styleClass="settings-section-title"/>
+                    <Label text="%settings.section.system" styleClass="settings-section-title"/>
                     <HBox styleClass="settings-row" alignment="CENTER_LEFT" spacing="12">
                         <VBox HBox.hgrow="ALWAYS" spacing="2">
-                            <Label text="Arrancar con el sistema"
+                            <Label text="%settings.autostart"
                                    styleClass="settings-label"/>
-                            <Label text="Inicia el daemon al arrancar la sesión"
+                            <Label text="%settings.autostart.desc"
                                    styleClass="settings-description"/>
                         </VBox>
                         <CheckBox fx:id="chkAutostart" onAction="#onAutostartChanged"/>
                     </HBox>
                 </VBox>
 
-                <!-- Tema visual -->
+                <!-- Tema visual e idioma -->
                 <VBox styleClass="settings-section" spacing="8">
-                    <Label text="Apariencia" styleClass="settings-section-title"/>
+                    <Label text="%settings.section.appearance" styleClass="settings-section-title"/>
                     <HBox styleClass="settings-row" alignment="CENTER_LEFT" spacing="12">
                         <VBox HBox.hgrow="ALWAYS" spacing="2">
-                            <Label text="Tema" styleClass="settings-label"/>
-                            <Label text="Claro u oscuro"
+                            <Label text="%settings.theme" styleClass="settings-label"/>
+                            <Label text="%settings.theme.desc"
                                    styleClass="settings-description"/>
                         </VBox>
                         <ComboBox fx:id="themeSelector" onAction="#onThemeChanged"/>
+                    </HBox>
+                    <HBox styleClass="settings-row" alignment="CENTER_LEFT" spacing="12">
+                        <VBox HBox.hgrow="ALWAYS" spacing="2">
+                            <Label text="%settings.language" styleClass="settings-label"/>
+                            <Label text="%settings.language.desc"
+                                   styleClass="settings-description"/>
+                        </VBox>
+                        <ComboBox fx:id="languageSelector" onAction="#onLanguageChanged"/>
                     </HBox>
                 </VBox>
 
                 <!-- Actualizaciones -->
                 <VBox styleClass="settings-section" spacing="8">
-                    <Label text="Actualizaciones" styleClass="settings-section-title"/>
+                    <Label text="%settings.section.updates" styleClass="settings-section-title"/>
                     <HBox styleClass="settings-row" alignment="CENTER_LEFT" spacing="12">
                         <VBox HBox.hgrow="ALWAYS" spacing="2">
                             <Label fx:id="versionLabel" styleClass="settings-label"/>
                             <Label fx:id="updateStatusLabel" styleClass="settings-description"/>
                         </VBox>
-                        <Button fx:id="checkUpdateBtn" text="Buscar actualizaciones"
+                        <Button fx:id="checkUpdateBtn" text="%settings.checkUpdates"
                                 onAction="#onCheckUpdate"/>
                     </HBox>
                 </VBox>
 
                 <!-- Apps manuales -->
                 <VBox styleClass="settings-section" spacing="8">
-                    <Label text="Aplicaciones manuales"
+                    <Label text="%settings.section.manualApps"
                            styleClass="settings-section-title"/>
                     <HBox alignment="CENTER_RIGHT">
-                        <Button text="Nueva aplicación..." onAction="#openAddAppDialog"/>
+                        <Button text="%settings.newApp" onAction="#openAddAppDialog"/>
                     </HBox>
                     <ListView fx:id="manualAppsList" prefHeight="200"/>
                 </VBox>

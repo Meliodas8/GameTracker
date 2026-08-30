@@ -1,5 +1,6 @@
 package dev.manel.gametracker.ui;
 
+import dev.manel.gametracker.core.config.I18n;
 import dev.manel.gametracker.core.model.GameSession;
 import dev.manel.gametracker.session.SessionManager;
 import javafx.collections.FXCollections;
@@ -9,12 +10,10 @@ import javafx.scene.control.*;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.WeekFields;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 public class HistoryController {
@@ -52,7 +51,7 @@ public class HistoryController {
                 new javafx.beans.property.SimpleStringProperty(data.getValue().gameName()));
         colDuration.setCellValueFactory(data ->
                 new javafx.beans.property.SimpleStringProperty(
-                        formatDuration(data.getValue().duration())));
+                        I18n.formatDuration(data.getValue().duration())));
         colSessions.setCellValueFactory(data ->
                 new javafx.beans.property.SimpleObjectProperty<>(data.getValue().sessions()));
     }
@@ -65,9 +64,9 @@ public class HistoryController {
                 .sorted()
                 .collect(Collectors.toCollection(ArrayList::new));
 
-        games.add(0, "Todos los juegos");
+        games.add(0, I18n.get("history.allGames"));
         gameFilter.setItems(FXCollections.observableArrayList(games));
-        gameFilter.setValue("Todos los juegos");
+        gameFilter.setValue(I18n.get("history.allGames"));
         gameFilter.setOnAction(e -> loadData());
     }
 
@@ -80,7 +79,7 @@ public class HistoryController {
         List<GameSession> sessions = SessionManager.getInstance().getCompletedSessions();
 
         String selectedGame = gameFilter.getValue();
-        if (selectedGame != null && !selectedGame.equals("Todos los juegos")) {
+        if (selectedGame != null && !selectedGame.equals(I18n.get("history.allGames"))) {
             sessions = sessions.stream()
                     .filter(s -> s.gameName().equals(selectedGame))
                     .toList();
@@ -93,8 +92,6 @@ public class HistoryController {
     }
 
     private List<HistoryEntry> groupByDay(List<GameSession> sessions) {
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
         record DayEntry(LocalDate date, String gameName, Duration total, int count) {}
 
         return sessions.stream()
@@ -113,12 +110,15 @@ public class HistoryController {
                     return new DayEntry(date, parts[1], total, e.getValue().size());
                 })
                 .sorted(Comparator.comparing(DayEntry::date).reversed())
-                .map(d -> new HistoryEntry(d.date().format(fmt), d.gameName(), d.total(), d.count()))
+                .map(d -> new HistoryEntry(I18n.formatDate(d.date()), d.gameName(), d.total(), d.count()))
                 .toList();
     }
 
     private List<HistoryEntry> groupByWeek(List<GameSession> sessions) {
-        WeekFields weekFields = WeekFields.of(Locale.getDefault());
+        WeekFields weekFields = WeekFields.of(I18n.locale());
+
+        // sortKey es "2026-W34", ordenable; la etiqueta visible se traduce al final
+        record WeekEntry(String sortKey, int year, int week, String gameName, Duration total, int count) {}
 
         return sessions.stream()
                 .collect(Collectors.groupingBy(s -> {
@@ -134,20 +134,16 @@ public class HistoryController {
                     Duration total = e.getValue().stream()
                             .map(GameSession::duration)
                             .reduce(Duration.ZERO, Duration::plus);
-                    return new HistoryEntry(
-                            parts[0], parts[1], total, e.getValue().size());
+                    String[] period = parts[0].split("-W", 2);
+                    return new WeekEntry(parts[0], Integer.parseInt(period[0]),
+                            Integer.parseInt(period[1]), parts[1], total, e.getValue().size());
                 })
-                .sorted(Comparator.comparing(HistoryEntry::date).reversed())
+                .sorted(Comparator.comparing(WeekEntry::sortKey).reversed())
+                .map(w -> new HistoryEntry(
+                        I18n.get("history.week", w.week(), String.valueOf(w.year())),
+                        w.gameName(), w.total(), w.count()))
                 .toList();
     }
 
-    private String formatDuration(Duration d) {
-        long hours = d.toHours();
-        long minutes = d.toMinutesPart();
-        long seconds = d.toSecondsPart();
-        if (hours > 0) return hours + "h " + minutes + "m";
-        if (minutes > 0) return minutes + "m";
-        return seconds + "s";
-    }
 
 }

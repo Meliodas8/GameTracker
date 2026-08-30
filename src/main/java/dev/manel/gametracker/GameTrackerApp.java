@@ -1,7 +1,9 @@
 package dev.manel.gametracker;
 
 import dev.manel.gametracker.core.config.ConfigManager;
+import dev.manel.gametracker.core.config.I18n;
 import dev.manel.gametracker.providers.GameSourceRegistry;
+import dev.manel.gametracker.ui.MainController;
 import dev.manel.gametracker.providers.ManualProvider;
 import dev.manel.gametracker.providers.SteamProvider;
 import dev.manel.gametracker.session.ProcessWatcher;
@@ -19,6 +21,8 @@ public class GameTrackerApp extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
+        I18n.apply(ConfigManager.getInstance().getLanguage());
+
         GameSourceRegistry registry = new GameSourceRegistry();
         registry.register(new SteamProvider());
         registry.register(new ManualProvider());
@@ -26,9 +30,7 @@ public class GameTrackerApp extends Application {
         watcher = new ProcessWatcher(registry, SessionManager.getInstance());
         watcher.start();
 
-        FXMLLoader loader = new FXMLLoader(
-                getClass().getResource("/dev/manel/gametracker/main.fxml")
-        );
+        FXMLLoader loader = MainController.mainLoader();
 
         Scene scene = new Scene(loader.load(), 900, 580);
 

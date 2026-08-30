@@ -8,14 +8,14 @@
 
     <left>
         <VBox styleClass="sidebar" spacing="4">
-            <Label styleClass="sidebar-title" text="MENÚ"/>
-            <Button fx:id="btnJuegos" text="Juegos"
+            <Label styleClass="sidebar-title" text="%nav.menu"/>
+            <Button fx:id="btnJuegos" text="%nav.games"
                     styleClass="nav-item"
                     onAction="#showGames"/>
-            <Button fx:id="btnHistorial" text="Historial"
+            <Button fx:id="btnHistorial" text="%nav.history"
                     styleClass="nav-item"
                     onAction="#showHistory"/>
-            <Button fx:id="btnAjustes" text="Ajustes"
+            <Button fx:id="btnAjustes" text="%nav.settings"
                     styleClass="nav-item"
                     onAction="#showSettings"/>
         </VBox>

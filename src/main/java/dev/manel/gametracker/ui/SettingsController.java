@@ -4,22 +4,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.manel.gametracker.autostart.AutostartStrategy;
-import dev.manel.gametracker.core.ProcessUtils;
 import dev.manel.gametracker.core.config.ConfigManager;
+import dev.manel.gametracker.core.config.I18n;
 import dev.manel.gametracker.core.model.DetectedGame;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
-import javafx.beans.value.ChangeListener;
-import javafx.geometry.Insets;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-
-import java.util.stream.Collectors;
+import javafx.util.StringConverter;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -37,6 +32,7 @@ public class SettingsController {
 
     @FXML private CheckBox chkAutostart;
     @FXML private ComboBox<String> themeSelector;
+    @FXML private ComboBox<String> languageSelector;
     @FXML private ListView<DetectedGame> manualAppsList;
     @FXML private Label versionLabel;
     @FXML private Label updateStatusLabel;
@@ -49,13 +45,30 @@ public class SettingsController {
 
     @FXML
     public void initialize() {
-        themeSelector.setItems(FXCollections.observableArrayList("Claro", "Oscuro"));
+        themeSelector.setItems(FXCollections.observableArrayList(
+                I18n.get("theme.light"), I18n.get("theme.dark")));
         themeSelector.setValue(
-                ConfigManager.getInstance().getTheme().equals("dark") ? "Oscuro" : "Claro"
+                ConfigManager.getInstance().getTheme().equals("dark")
+                        ? I18n.get("theme.dark") : I18n.get("theme.light")
         );
+
+        // el ComboBox guarda códigos ("en", "es") y muestra el nombre traducido
+        languageSelector.setItems(FXCollections.observableArrayList(I18n.SUPPORTED));
+        languageSelector.setConverter(new StringConverter<>() {
+            @Override public String toString(String code) {
+                return code == null ? null : I18n.get("lang." + code);
+            }
+            @Override public String fromString(String label) {
+                return I18n.SUPPORTED.stream()
+                        .filter(c -> I18n.get("lang." + c).equals(label))
+                        .findFirst().orElse("en");
+            }
+        });
+        languageSelector.setValue(ConfigManager.getInstance().getLanguage());
+
         chkAutostart.setSelected(autostart.isEnabled());
-        versionLabel.setText("Versión actual: " + currentVersion);
-        updateStatusLabel.setText("Comprueba si hay una nueva versión disponible");
+        versionLabel.setText(I18n.get("settings.version", currentVersion));
+        updateStatusLabel.setText(I18n.get("settings.update.hint"));
         setupManualAppsList();
         loadManualApps();
     }
@@ -81,7 +94,7 @@ public class SettingsController {
                 Region spacer = new Region();
                 HBox.setHgrow(spacer, Priority.ALWAYS);
 
-                Button remove = new Button("Eliminar");
+                Button remove = new Button(I18n.get("common.remove"));
                 remove.getStyleClass().add("btn-danger");
                 remove.setOnAction(e -> removeApp(app));
 
@@ -98,90 +111,11 @@ public class SettingsController {
 
     @FXML
     public void openAddAppDialog() {
-        Dialog<DetectedGame> dialog = new Dialog<>();
-        dialog.setTitle("Añadir aplicación manual");
-        dialog.setHeaderText(null);
-
-        // Aplicar el tema actual al diálogo
-        String css = ConfigManager.getInstance().getTheme().equals("dark") ? "styles-dark.css" : "styles.css";
-        dialog.getDialogPane().getStylesheets().add(
-                getClass().getResource("/dev/manel/gametracker/" + css).toExternalForm()
-        );
-
-        ButtonType addButtonType = new ButtonType("Añadir", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(addButtonType, ButtonType.CANCEL);
-
-        // Campos del formulario
-        TextField nameField = new TextField();
-        nameField.setPromptText("Nombre (ej: Brave)");
-
-        TextField execField = new TextField();
-        execField.setPromptText("Ejecutable (ej: brave)");
-
-        // Lista de procesos en ejecución — misma lógica que ProcessWatcher
-        List<ProcessUtils.ProcessInfo> processes = ProcessUtils.getRunningProcessInfosSorted();
-
-        TextField filterField = new TextField();
-        filterField.setPromptText("Filtrar...");
-
-        ListView<ProcessUtils.ProcessInfo> processList = new ListView<>();
-        ObservableList<ProcessUtils.ProcessInfo> allProcesses = FXCollections.observableArrayList(processes);
-        processList.setItems(allProcesses);
-        processList.setPrefHeight(160);
-        processList.setCellFactory(lv -> new ListCell<>() {
-            @Override
-            protected void updateItem(ProcessUtils.ProcessInfo item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.displayLabel());
-            }
-        });
-
-        filterField.textProperty().addListener((obs, old, val) ->
-                processList.setItems(val.isBlank()
-                        ? allProcesses
-                        : allProcesses.filtered(p -> p.displayLabel().toLowerCase().contains(val.toLowerCase())))
-        );
-
-        // Al seleccionar un proceso se rellena automáticamente el campo ejecutable
-        processList.getSelectionModel().selectedItemProperty().addListener(
-                (obs, old, selected) -> { if (selected != null) execField.setText(selected.suggestedExecName()); }
-        );
-
-        Label nameLabel = new Label("Nombre");
-        nameLabel.getStyleClass().add("settings-label");
-        Label execLabel = new Label("Ejecutable");
-        execLabel.getStyleClass().add("settings-label");
-        Label processLabel = new Label("Procesos en ejecución — clic para usar, o escribe parte de la ruta para apps Java/Python");
-        processLabel.getStyleClass().add("settings-description");
-
-        VBox content = new VBox(8,
-                nameLabel, nameField,
-                execLabel, execField,
-                processLabel, filterField, processList
-        );
-        content.setPadding(new Insets(16));
-        content.setPrefWidth(400);
-        dialog.getDialogPane().setContent(content);
-
-        // El botón Añadir se activa solo cuando ambos campos tienen texto
-        Button addButton = (Button) dialog.getDialogPane().lookupButton(addButtonType);
-        addButton.setDisable(true);
-        ChangeListener<String> validator = (obs, old, val) ->
-                addButton.setDisable(nameField.getText().isBlank() || execField.getText().isBlank());
-        nameField.textProperty().addListener(validator);
-        execField.textProperty().addListener(validator);
-
-        dialog.setResultConverter(bt -> bt == addButtonType
-                ? new DetectedGame(nameField.getText().trim(), "MANUAL", execField.getText().trim(), null)
-                : null
-        );
-
-        dialog.showAndWait().ifPresent(app -> {
+        AddAppDialog.show().ifPresent(app -> {
             ConfigManager.getInstance().addManualApp(app);
             loadManualApps();
         });
     }
-
 
     private void removeApp(DetectedGame app) {
         ConfigManager.getInstance().removeManualApp(app.executableName());
@@ -191,9 +125,20 @@ public class SettingsController {
     @FXML
     public void onThemeChanged() {
         String selected = themeSelector.getValue();
-        String theme = selected.equals("Oscuro") ? "dark" : "light";
+        String theme = selected.equals(I18n.get("theme.dark")) ? "dark" : "light";
         ConfigManager.getInstance().setTheme(theme);
         applyTheme(theme);
+    }
+
+    @FXML
+    public void onLanguageChanged() {
+        String selected = languageSelector.getValue();
+        // setValue() en initialize() también dispara este handler: ignorar si no cambia nada
+        if (selected == null || selected.equals(ConfigManager.getInstance().getLanguage())) return;
+
+        ConfigManager.getInstance().setLanguage(selected);
+        I18n.apply(selected);
+        MainController.reloadInto(languageSelector.getScene());
     }
 
     @FXML
@@ -205,7 +150,7 @@ public class SettingsController {
                 autostart.disable();
             }
         } catch (RuntimeException e) {
-            showAlert("Error al cambiar el autostart: " + e.getMessage());
+            showAlert(I18n.get("error.autostart", e.getMessage()));
             chkAutostart.setSelected(autostart.isEnabled());
         }
     }
@@ -221,7 +166,7 @@ public class SettingsController {
     @FXML
     public void onCheckUpdate() {
         checkUpdateBtn.setDisable(true);
-        updateStatusLabel.setText("Buscando actualizaciones...");
+        updateStatusLabel.setText(I18n.get("update.checking"));
 
         HttpClient client = buildHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -236,8 +181,8 @@ public class SettingsController {
                 .thenAccept(response -> {
                     List<String> newer = parseNewerVersions(response.body());
                     String status = newer.isEmpty()
-                            ? "Ya tienes la última versión (" + currentVersion + ")"
-                            : "Actualizaciones disponibles: " + String.join(", ", newer);
+                            ? I18n.get("update.upToDate", currentVersion)
+                            : I18n.get("update.available", String.join(", ", newer));
                     Platform.runLater(() -> {
                         updateStatusLabel.setText(status);
                         checkUpdateBtn.setDisable(false);
@@ -245,7 +190,7 @@ public class SettingsController {
                 })
                 .exceptionally(e -> {
                     Platform.runLater(() -> {
-                        updateStatusLabel.setText("Error al comprobar actualizaciones: " + e.getMessage());
+                        updateStatusLabel.setText(I18n.get("update.error", e.getMessage()));
                         checkUpdateBtn.setDisable(false);
                     });
                     return null;
@@ -291,18 +236,18 @@ public class SettingsController {
 
     private String loadCurrentVersion() {
         try (InputStream in = getClass().getResourceAsStream("/dev/manel/gametracker/version.properties")) {
-            if (in == null) return "desconocida";
+            if (in == null) return I18n.get("settings.version.unknown");
             Properties props = new Properties();
             props.load(in);
-            return props.getProperty("version", "desconocida");
+            return props.getProperty("version", I18n.get("settings.version.unknown"));
         } catch (IOException e) {
-            return "desconocida";
+            return I18n.get("settings.version.unknown");
         }
     }
 
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle("GameTracker");
+        alert.setTitle(I18n.get("common.appName"));
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();

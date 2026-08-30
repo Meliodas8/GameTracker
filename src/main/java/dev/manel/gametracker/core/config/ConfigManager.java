@@ -36,6 +36,19 @@ public class ConfigManager {
         return config.theme != null ? config.theme : "light";
     }
 
+    public String getLanguage() {
+        if (config.language == null) {
+            config.language = I18n.systemLanguage();
+            saveConfig();
+        }
+        return config.language;
+    }
+
+    public void setLanguage(String language) {
+        config.language = language;
+        saveConfig();
+    }
+
     public void setTheme(String theme) {
         config.theme = theme;
         saveConfig();
@@ -75,5 +88,6 @@ public class ConfigManager {
     private static class Config {
         List<DetectedGame> manualApps = new ArrayList<>();
         String theme = "light";
+        String language = null;
     }
 }
