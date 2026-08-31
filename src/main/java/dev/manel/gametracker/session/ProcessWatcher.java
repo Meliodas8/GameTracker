@@ -11,6 +11,7 @@ import java.nio.channels.FileLock;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -96,11 +97,9 @@ public class ProcessWatcher {
             List<DetectedGame> knownGames = registry.getAllGames();
 
             for (DetectedGame game : knownGames) {
-                String execName = game.executableName().toLowerCase();
                 boolean isRunning = runningProcesses.stream().anyMatch(info ->
                                 info.comm().equalsIgnoreCase(game.executableName())
-                                || (!info.exePath().isBlank()
-                                    && info.exePath().toLowerCase().contains(execName)))
+                                || pathMatches(info.exePath(), game.executableName()))
                         || ("STEAM".equals(game.platform())
                             && game.platformId() != null
                             && runningSteamAppIds.contains(game.platformId()));
@@ -114,6 +113,20 @@ public class ProcessWatcher {
         } catch (Exception e) {
             System.err.println("Error en scan: " + e.getMessage());
         }
+    }
+
+    /**
+     * El ejecutable tiene que aparecer en la ruta como palabra completa, no como
+     * trozo de otra: "disco" (Disco Elysium) matcheaba /.../discord/Discord.
+     * Los limites son alfanumericos, asi "intellij-idea" sigue matcheando
+     * /opt/intellij-idea-ultimate/jbr/bin/java y "disco" matchea disco.exe.
+     */
+    static boolean pathMatches(String exePath, String execName) {
+        if (exePath == null || exePath.isBlank() || execName.isBlank()) return false;
+        return Pattern.compile("(?<![\\p{Alnum}])" + Pattern.quote(execName) + "(?![\\p{Alnum}])",
+                        Pattern.CASE_INSENSITIVE)
+                .matcher(exePath)
+                .find();
     }
 
     // Detecta juegos de Steam corriendo bajo Proton buscando procesos "reaper"
